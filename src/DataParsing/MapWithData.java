@@ -2,14 +2,10 @@ package DataParsing;
 
 import COMSETsystem.*;
 
-import java.io.BufferedWriter;
-import java.io.FileWriter;
 import java.time.ZoneId;
 import java.util.ArrayList;
 import java.util.PriorityQueue;
 import java.util.Random;
-
-import org.apache.log4j.jmx.Agent;
 
 /**
  * The MapWithData class is responsible for loading a resource dataset file,
@@ -64,6 +60,8 @@ public class MapWithData {
 	 * be created.
 	 * @return long the latest resource time
 	 */
+
+	/*
 	public long createMapWithData(Simulator simulator) {
  
 		CSVNewYorkParser parser = new CSVNewYorkParser(resourceFile, zoneId);
@@ -89,6 +87,49 @@ public class MapWithData {
 			e.printStackTrace();
 		}
 	
+		return latestResourceTime;
+	}
+	 */
+
+	/**
+	* My version of createMapWithData
+	* Where resources in the first 2 mins are retrieved
+	 */
+
+	public long createMapWithData(Simulator simulator) {
+		long window=2;
+		window*=60;
+		CSVNewYorkParser parser = new CSVNewYorkParser(resourceFile, zoneId);
+		ArrayList<Resource> resourcesParsed = parser.parse();
+		long startWindowTime=resourcesParsed.get(0).getTime();
+		System.out.println("$$$$#### Starting Time for WINDOW:"+startWindowTime);
+		try {
+			for (Resource resource : resourcesParsed) {
+				if(resource.getTime()<startWindowTime+window)
+				{
+					//System.out.println("$$$$#### Resource Time:"+resource.getTime());
+					// map matching
+					LocationOnRoad pickupMatch = mapMatch(resource.getPickupLon(), resource.getPickupLat());
+					LocationOnRoad dropoffMatch = mapMatch(resource.getDropoffLon(), resource.getDropoffLat());
+
+					ResourceEvent ev = new ResourceEvent(pickupMatch, dropoffMatch, resource.getTime(), simulator);
+					events.add(ev);
+
+					//  track earliestResourceTime and latestResourceTime
+					if (resource.getTime() < earliestResourceTime) {
+						earliestResourceTime = resource.getTime();
+					}
+					if (resource.getTime() + simulator.ResourceMaximumLifeTime + ev.tripTime > latestResourceTime) {
+						latestResourceTime = resource.getTime() + simulator.ResourceMaximumLifeTime + ev.tripTime;
+					}
+				}
+
+			}
+			System.out.println("$$$$#### Number of resources added to the event queue:"+events.size());
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
+
 		return latestResourceTime;
 	}
 
