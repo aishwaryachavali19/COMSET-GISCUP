@@ -1,11 +1,12 @@
 import COMSETsystem.BaseAgent;
 import COMSETsystem.Simulator;
-
-import java.io.IOException;
-import java.util.logging.LogManager;
-import java.util.Random;
-import java.util.Properties;
+import UserExamples.HungarianAlgorithm;
 import java.io.FileInputStream;
+import java.io.IOException;
+import java.util.*;
+import java.util.Properties;
+import java.util.Random;
+import java.util.logging.LogManager;
 
 /**
  * The Main class parses the configuration file and starts the simulator. 
@@ -98,8 +99,15 @@ public class Main {
 			
 			simulator.configure(mapJSONFile, datasetFile, numberOfAgents, boundingPolygonKMLFile, resourceMaximumLifeTime, agentPlacementSeed, speedReduction);
 
-			simulator.run();
 
+		//	simulator.stableMarriage();
+            List<List<Double>> costMatrix = new ArrayList<List<Double>>();
+            costMatrix = simulator.createCostMatrix();
+            System.out.println("Final matrix size " +costMatrix.size());
+            double[][] array = costMatrix.stream().map(l->l.stream().mapToDouble(i->i).toArray()).toArray(double[][]::new);
+            double cost= HungarianAlgorithm.hgAlgorithm(array,"max");
+            System.out.println(cost);
+			simulator.run();
 		} catch (Exception ex) {
 			ex.printStackTrace();
 		}

@@ -88,6 +88,11 @@ public class ResourceEvent extends Event {
 
 	}
 
+	@Override
+	Boolean isResource() {
+		return true;
+	}
+
 	/*
 	 * Handler of a BECOME_AVAILABLE event
 	 */
