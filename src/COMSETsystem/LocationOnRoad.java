@@ -7,10 +7,12 @@ public class LocationOnRoad {
 
 	public Road road;
 	public long travelTimeFromStartIntersection;
+	public long travelDistanceFromStartIntersection;
 
 	public LocationOnRoad(Road road, long travelTimeFromStartIntersection) {
 		this.road = road;
 		this.travelTimeFromStartIntersection = travelTimeFromStartIntersection;
+		this.travelDistanceFromStartIntersection= (long) ((road.length/road.travelTime)*travelTimeFromStartIntersection);
 	}
 
 	/**
