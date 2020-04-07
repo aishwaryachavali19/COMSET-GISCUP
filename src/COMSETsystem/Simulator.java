@@ -151,7 +151,7 @@ public class Simulator {
 		// Pre-compute shortest travel times between all pairs of intersections.
 		System.out.println("Pre-computing all pair travel times...");
 		map.calcTravelTimes();
-
+		map.calcTravelDistances();
 		// Make a map copy for agents to use so that an agent cannot modify the map used by
 		// the simulator
 		mapForAgents = map.makeCopy();
@@ -179,16 +179,17 @@ public class Simulator {
 
 	public void stableMarriage()
 	{
-		PriorityQueue<Map.Entry<Long, Long>> pq = new PriorityQueue<>((a,b) -> a.getValue()>b.getValue()?1:-1);
-		HashMap<Long,Long> currentArrivalTime=new HashMap<>();
-		ArrayList<HashMap<Long,Long> > resPrefList =
-				new ArrayList<HashMap<Long,Long> >();
+		HashMap<Long, ArrayList<Long>> resPrefList= new HashMap<Long, ArrayList<Long>>();
+		//HashMap<Long,HashMap<Long,Long> > resPrefList= new HashMap<Long, HashMap<Long,Long>>();
+
+
+		long min= Long.MAX_VALUE;
 		for(Event event : events)
 		{
 			if(event.isResource())
 			{
-				LocationOnRoad bestAgentLocationOnRoad = null;
-
+				//LocationOnRoad bestAgentLocationOnRoad = null;
+				LinkedHashMap<Long,Long> currentArrivalTime=new LinkedHashMap<>();
 				for (AgentEvent agent : emptyAgents) {
 
 					// Calculate the travel time from the agent's current location to resource.
@@ -203,29 +204,25 @@ public class Simulator {
 					LocationOnRoad agentLocationOnRoad = new LocationOnRoad(agent.loc.road, travelTimeFromStartIntersection);
 					long travelTime = map.travelTimeBetween(agentLocationOnRoad, ((ResourceEvent) event).pickupLoc);
 					long arriveTime = travelTime +((ResourceEvent) event).time;
-
 					currentArrivalTime.put(agent.id,arriveTime);
-					//System.out.println(agent.id+","+arriveTime);
 
 				}
-				System.out.println("Reached here!");
+				PriorityQueue<Map.Entry<Long, Long>> pq = new PriorityQueue<>((a,b) -> a.getValue()>b.getValue()?1:-1);
 				pq.addAll(currentArrivalTime.entrySet());
-				currentArrivalTime.clear();
-				//System.out.println("####$$$ Resource pref list:");
+				//currentArrivalTime.clear();
+				ArrayList<Long> aList=new ArrayList<Long>();
 				for(int i=0;i<10;i++)
 				{
 					if(pq.isEmpty())
 						break;
 					Map.Entry<Long,Long> e=pq.poll();
-					currentArrivalTime.put(e.getKey(),e.getValue());
-					//System.out.print(" "+"("+e.getKey()+","+e.getValue()+")");
+					//currentArrivalTime.put(e.getKey(),e.getValue());
+					aList.add(e.getKey());
 				}
-
-				resPrefList.add(currentArrivalTime);
-				//System.out.println("####$$$$$Size:"+resPrefList.size());
+				//resPrefList.put(event.id,currentArrivalTime);
+				resPrefList.put(event.id,aList);
 
 			}
-			System.out.println("####$$$$$Size:"+resPrefList.size());
 
 
 
@@ -267,6 +264,86 @@ public class Simulator {
 				}
 				*/
 		}
+
+
+		//HashMap<Long,HashMap<Long,Double> > agentPrefList= new HashMap<Long, HashMap<Long,Double>>();
+		HashMap<Long, ArrayList<Long>> agentPrefList= new HashMap<Long, ArrayList<Long>>();
+		for(AgentEvent agent: emptyAgents)
+		{
+			HashMap<Long,Double> currentBenefit=new HashMap<>();
+			for(Event event : events)
+			{
+				if(event.isResource())
+				{
+
+					long travelTimeToEndIntersection = agent.time - ((ResourceEvent) event).time;
+					long travelTimeFromStartIntersection = agent.loc.road.travelTime - travelTimeToEndIntersection;
+					LocationOnRoad agentLocationOnRoad = new LocationOnRoad(agent.loc.road, travelTimeFromStartIntersection);
+					long distance=map.travelDistanceBetween(agentLocationOnRoad,((ResourceEvent) event).pickupLoc);
+					long tripDistance=map.travelDistanceBetween(((ResourceEvent) event).pickupLoc,((ResourceEvent) event).dropoffLoc);
+					double benefit= (double)tripDistance/(tripDistance + distance);
+
+					currentBenefit.put(event.id,benefit);
+				}
+			}
+			PriorityQueue<Map.Entry<Long, Double>> pq2 = new PriorityQueue<>((a,b) -> a.getValue()>b.getValue()?-1:1);
+			pq2.addAll(currentBenefit.entrySet());
+			//currentBenefit.clear();
+			ArrayList<Long> aList2=new ArrayList<Long>();
+			for(int i=0;i<10;i++)
+			{
+				if(pq2.isEmpty())
+					break;
+				Map.Entry<Long,Double> e=pq2.poll();
+				//currentBenefit.put(e.getKey(),e.getValue());
+				aList2.add(e.getKey());
+				//System.out.print(" "+"("+e.getKey()+","+e.getValue()+")");
+			}
+			//agentPrefList.put(agent.id,currentBenefit);
+			agentPrefList.put(agent.id,aList2);
+
+		}
+		/*
+		//To print agent preference list along with the benefit
+		System.out.println("Agent pref list:");
+		for(HashMap<Long,Double> innerList : agentPrefList.values()) {
+
+			for(Long number : innerList.keySet()) {
+				System.out.print(number+":" +innerList.get(number)+",");
+			}
+			System.out.println();
+		}
+		*/
+		//Agent preference list with only resource IDs
+		System.out.println("Agent pref list:");
+		for(ArrayList<Long> innerList : agentPrefList.values()) {
+			for(Long number : innerList) {
+				System.out.print(number+",");
+			}
+			System.out.println();
+		}
+		/*
+		//To print resource preference list along with waiting time. Need to change code a little to get the required o/p
+		System.out.println("\n\nResource pref list:");
+		for(HashMap<Long,Long> innerList : resPrefList.values()) {
+
+			for(Long number : innerList.keySet()) {
+				System.out.print(number+":" +innerList.get(number)+",");
+			}
+			System.out.println();
+		}
+		*/
+
+		//Resource preference list with only agent IDs
+		System.out.println("\n\nResource pref list:");
+		for(ArrayList<Long> innerList : resPrefList.values()) {
+
+			for(Long number : innerList) {
+				System.out.print(number+",");
+			}
+			System.out.println();
+		}
+
 	}
 
 
