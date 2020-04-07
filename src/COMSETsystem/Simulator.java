@@ -2,15 +2,18 @@ package COMSETsystem;
 
 import MapCreation.*;
 
+import java.io.File;
 import java.text.NumberFormat;
 import java.util.*;
 import java.util.logging.Level;
 import java.util.logging.Logger;
-
+import java.text.*;
+import UserExamples.HungarianAlgorithm;
 import me.tongfei.progressbar.*;
 
 
 import DataParsing.*;
+
 
 /**
  * The Simulator class defines the major steps of the simulation. It is
@@ -158,6 +161,48 @@ public class Simulator {
 		// Make a map copy for agents to use so that an agent cannot modify the map used by
 		// the simulator
 		mapForAgents = map.makeCopy();
+		/*CSVNewYorkParser parser = new CSVNewYorkParser(this.resourceFile, map.computeZoneId());
+		try {
+		Scanner sc = new Scanner(new File(parser.path));   //scanner will scan the file specified by path
+		sc.useDelimiter(",|\n");    //scanner will skip over "," and "\n" found in file
+		sc.nextLine(); // skip the header
+
+		//while there are tokens in the file the scanner will scan the input
+		//each line in input file will contain 4 tokens for the scanner and will be in the format : latitude longitude time type
+		//per line of input file we will create a new TimestampAgRe object
+		// and save the 4 tokens of each line in the corresponding field of the TimestampAgRe object
+		while (sc.hasNext()) {
+				sc.next();// skip first VendorID
+				String pickuptime = sc.next();
+				DateFormat format = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss", Locale.ENGLISH);
+				Calendar date = Calendar.getInstance();
+				date.setTime(format.parse(pickuptime));
+				int day = date.get(Calendar.DATE); // 5
+				int minutes = date.get(Calendar.HOUR); // 30
+				long time = parser.dateConversion(pickuptime);
+				sc.next();// skip these fields
+				sc.next();
+				sc.next();
+				double pickupLon = Double.parseDouble(sc.next());
+				double pickupLat = Double.parseDouble(sc.next());
+				sc.next();// skip these fields
+				sc.next();
+				double dropoffLon = Double.parseDouble(sc.next());
+				double dropoffLat = Double.parseDouble(sc.next());
+				sc.nextLine(); //skip rest of fileds in this line
+
+				// Only keep the resources such that both pickup location and dropoff location are within the bounding polygon.
+				if (!(MapCreator.insidePolygon(pickupLon, pickupLat) && MapCreator.insidePolygon(dropoffLon, dropoffLat))) {
+					continue;
+				}
+
+				parser.resources.add(new Resource(pickupLat, pickupLon, dropoffLat, dropoffLon, time)); //create new resource with the above fields
+			}
+			sc.close();
+		} catch (Exception e) {
+
+			e.printStackTrace();
+		}*/
 
 		MapWithData mapWD = new MapWithData(map, this.resourceFile, agentPlacementRandomSeed);
 
@@ -230,55 +275,23 @@ public class Simulator {
 			}
 			System.out.println("####$$$$$Size:"+resPrefList.size());
 
-
-
-				/*
-				if (earliest > ((ResourceEvent) event).availableTime + ResourceMaximumLifeTime) {
-					waitingResources.add(((ResourceEvent) event));
-					((ResourceEvent) event).time += ResourceMaximumLifeTime;
-					((ResourceEvent) event).eventCause = ((ResourceEvent) event).EXPIRED;
-					Logger.getLogger(this.getClass().getName()).log(Level.INFO, "Setup expiration event at time " + this.time, this);
-					return this;
-				} else { // make assignment
-					// update the statistics
-					long cruiseTime = time - bestAgent.startSearchTime;
-					long approachTime = earliest - time;
-					long searchTime = cruiseTime + approachTime;
-					long waitTime = earliest - ((ResourceEvent) event).availableTime;
-					totalAgentCruiseTime += cruiseTime;
-					totalAgentApproachTime += approachTime;
-					totalAgentSearchTime += searchTime;
-					totalResourceWaitTime += waitTime;
-					totalResourceTripTime += ((ResourceEvent) event).tripTime;
-					totalAssignments++;
-					// Inform the assignment to the agent.
-					bestAgent.assignedTo(bestAgentLocationOnRoad, time, id, pickupLoc, dropoffLoc);
-					// "Label" the agent as occupied.
-					emptyAgents.remove(bestAgent);
-					events.remove(bestAgent);
-					Logger.getLogger(this.getClass().getName()).log(Level.INFO, "Assigned to agent id = " + bestAgent.id + " currently at " + bestAgent.loc, this);
-					bestAgent.setEvent(earliest + tripTime, dropoffLoc, AgentEvent.DROPPING_OFF);
-					Logger.getLogger(this.getClass().getName()).log(Level.INFO, "From agent to resource = " + approachTime + " seconds.", this);
-					Logger.getLogger(this.getClass().getName()).log(Level.INFO, "From pickupLoc to dropoffLoc = " + tripTime + " seconds.", this);
-					Logger.getLogger(this.getClass().getName()).log(Level.INFO, "cruise time = " + cruiseTime + " seconds.", this);
-					Logger.getLogger(this.getClass().getName()).log(Level.INFO, "approach time = " + approachTime + " seconds.", this);
-					Logger.getLogger(this.getClass().getName()).log(Level.INFO, "search time = " + searchTime + " seconds.", this);
-					Logger.getLogger(this.getClass().getName()).log(Level.INFO, "wait time = " + waitTime + " seconds.", this);
-					Logger.getLogger(this.getClass().getName()).log(Level.INFO, "Next agent trigger time = " + bestAgent.time, this);
-					// Add the event back to the event queue.
-					return bestAgent;
-				}
-				*/
 		}
 	}
 	//Snehal
 	public List<List<Double>> createCostMatrix(){
 		List<List<Double>> costMatrix = new ArrayList<List<Double>>();
 		List<Double> resAgent = new ArrayList<>();
+		List<AgentEvent> agentInResList = new ArrayList<>();//Snehal
+		Map<Integer,List> IdAgent = new HashMap<>();//Snehal
+		Map<Integer,ResourceEvent> IdResource = new HashMap<>();//Snehal
+		Map<AgentEvent,LocationOnRoad> map_agentLocationOnRoad = new HashMap<>();
+		Map<AgentEvent,Long> AgentArriveTime = new HashMap<>();
+		int id=0;
 		for(Event event : events)
 		{
 			if(event.isResource())
 			{
+				agentInResList = new ArrayList<>();//Snehal
 				resAgent = new ArrayList<>();//Snehal
 				event=(ResourceEvent)event;
 				AgentEvent bestAgent = null;
@@ -291,23 +304,83 @@ public class Simulator {
 					long travelTimeToEndIntersection = agent.time - ((ResourceEvent) event).time;
 					long travelTimeFromStartIntersection = agent.loc.road.travelTime - travelTimeToEndIntersection;
 					LocationOnRoad agentLocationOnRoad = new LocationOnRoad(agent.loc.road, travelTimeFromStartIntersection);
+					//Store the locationOnRoad of the agent in the map
+					map_agentLocationOnRoad.put(agent, agentLocationOnRoad);
 					long travelTime = map.travelTimeBetween(agentLocationOnRoad, ((ResourceEvent) event).pickupLoc);
 					long arriveTime = travelTime +((ResourceEvent) event).time;
+					//Store the arrive time for each agent
+					AgentArriveTime.put(agent,arriveTime);
 					double[] agentLatLong = agentLocationOnRoad.toLatLon();
 					double[] resourcePickLatLong = ((ResourceEvent) event).pickupLoc.toLatLon();
 					double agentToResourceDistance = geoProj.distanceGreatCircle(agentLatLong[0],agentLatLong[1],resourcePickLatLong[0],resourcePickLatLong[1]);
 					double[] resourceDropLatLong =  ((ResourceEvent) event).dropoffLoc.toLatLon();
 					double tripDistance = geoProj.distanceGreatCircle(resourcePickLatLong[0],resourcePickLatLong[1],resourceDropLatLong[0],resourceDropLatLong[1]);
 					double benefit = 1 + (tripDistance / (tripDistance + agentToResourceDistance));
-					resAgent.add(benefit);
+					if(arriveTime <= ((ResourceEvent) event).expirationTime)
+					{
+						resAgent.add(benefit);
+						agentInResList.add(agent);
+					}
+					else{
+						resAgent.add(0.0);
+						agentInResList.add(null);
+					}
+				}
+				if (Collections.frequency(resAgent, 0.0) == resAgent.size())
+				{
+					waitingResources.add((ResourceEvent) event);
+					continue;
 				}
 				costMatrix.add(resAgent);
+				IdAgent.put(id,agentInResList);//Snehal
+				IdResource.put(id, (ResourceEvent) event);//Snehal
+				id++;
+
 			}
 
 		}
-
+		System.out.println("##Hungarian - Agent in resource list" + agentInResList.size());
 		System.out.println("##Hungarian - resource agent " + resAgent.size());
 		System.out.println("##Costmatrix - " + costMatrix.size());
+		System.out.println("Final matrix size " +costMatrix.size());
+		double[][] array = costMatrix.stream().map(l->l.stream().mapToDouble(i->i).toArray()).toArray(double[][]::new);
+		int[][] assignment = HungarianAlgorithm.hgAlgorithmAssignments(array,"max");
+		double cost= HungarianAlgorithm.hgAlgorithm(array,"max");
+		System.out.println("cost"+ cost);
+		/*for(int i=0;i<assignment.length;i++){
+			Event resEvent = IdResource.get(assignment[i][0]);
+			List<Event> ag = IdAgent.get(assignment[i][0]);
+			//AgentEvent agentEvent = ag.get(assignment[i][1]);
+			System.out.println("Resource "+ assignment[i][0]+" assigned to "+ "Agent "+assignment[i][1]+ " Benefit "+ array[assignment[i][0]][assignment[i][1]]);
+
+		}*/
+		long prevResId = -1, prevAgentId=-1;
+		double repCost=0;
+		int count=0;
+		int assignmentSize = Math.min(resAgent.size(),costMatrix.size());
+		for(int i=0;i<assignmentSize;i++){
+
+			ResourceEvent resEvent = IdResource.get(assignment[i][0]);
+			List<AgentEvent> ag = IdAgent.get(assignment[i][0]);
+			//AgentEvent agentEvent = ag.get(assignment[i][1]);
+			if(array[assignment[i][0]][assignment[i][1]] != 0.0) {
+				System.out.println("Resource Id " + resEvent.id + " assigned to " + "Agent Id " + ag.get(assignment[i][1]).id + " Benefit " + array[assignment[i][0]][assignment[i][1]]);
+				waitingResources.remove(resEvent);
+				AgentEvent bestAgent = ag.get(assignment[i][1]); //Agent assigned to the resource
+				// Inform the assignment to the agent.
+				bestAgent.assignedTo(map_agentLocationOnRoad.get(bestAgent),resEvent.time, resEvent.id, resEvent.pickupLoc, resEvent.dropoffLoc);
+
+				// "Label" the agent as occupied.
+				emptyAgents.remove(bestAgent);
+				events.remove(bestAgent);
+				bestAgent.setEvent(AgentArriveTime.get(bestAgent) + resEvent.tripTime, resEvent.dropoffLoc, AgentEvent.DROPPING_OFF);
+			}
+			//prevResId = resEvent.id;
+			//prevAgentId = ag.get(assignment[i][1]).id;
+		}
+		//double finalcost = cost - repCost;
+		//System.out.println("Number of repetitive costs "+ count);
+		//System.out.println("Final cost after deducting unassigned resource cost " + finalcost);
 		return costMatrix;
 	}
 
