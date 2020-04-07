@@ -17,7 +17,7 @@ public class LocationOnRoad {
 
 	/**
 	 * Get a lat,lon representation of the location
-	 * 
+	 *
 	 * @return double[] a double array {lat, lon}
 	 */
 	public double[] toLatLon() {
@@ -33,10 +33,10 @@ public class LocationOnRoad {
 			latLon[1] = (link.from.longitude + link.to.longitude) / 2;
 		} else {
 			latLon[0] = link.from.latitude + (link.to.latitude - link.from.latitude) * (((double)travelTimeFromStartVertex) / link.travelTime);
-			latLon[1] = link.from.longitude + (link.to.longitude - link.from.longitude) * (((double)travelTimeFromStartVertex) / link.travelTime);    		
+			latLon[1] = link.from.longitude + (link.to.longitude - link.from.longitude) * (((double)travelTimeFromStartVertex) / link.travelTime);
 		}
 
-		return latLon;     
+		return latLon;
 	}
 
 	public String toString() {

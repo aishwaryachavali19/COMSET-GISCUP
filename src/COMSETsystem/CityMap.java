@@ -34,7 +34,7 @@ public class CityMap {
 
 	// A mapping from all the intersection ids to corresponding Intersections
 	private Map<Long, Intersection> intersections;
-	
+
 	// A list of roads
 	private List<Road> roads;
 
@@ -46,15 +46,17 @@ public class CityMap {
 
 	// Shortest travel-time path table.
 	private ImmutableList<ImmutableList<PathTableEntry>> immutablePathTable;
-	
+
+	private ImmutableList<ImmutableList<PathTableEntry>> immutablePathTable2;
+
 	// A map from an intersection's path table index to the intersection itself.
 	private HashMap<Integer, Intersection> intersectionsByPathTableIndex;
 
 	/*
 	 * Constructor of CityMap
 	 */
-	public CityMap(Map<Long, Intersection> intersections, List<Road> roads, 
-			GeoProjector projector, KdTree kdTree) {
+	public CityMap(Map<Long, Intersection> intersections, List<Road> roads,
+				   GeoProjector projector, KdTree kdTree) {
 		this.intersections = intersections;
 		this.projector = projector;
 		this.kdTree = kdTree;
@@ -70,7 +72,7 @@ public class CityMap {
 
 	}
 
-	
+
 	/**
 	 * Create an empty CityMap object for making a copy.
 	 * See makeCopy().
@@ -88,10 +90,21 @@ public class CityMap {
 	public long travelTimeBetween (Intersection source, Intersection destination) {
 		return immutablePathTable.get(source.pathTableIndex).get(destination.pathTableIndex).travelTime;
 	}
+	/**
+	 * Gets the distance between one intersection to the next
+	 * intersection.
+	 *
+	 * @param source The intersection to depart from
+	 * @param destination The intersection to arrive at
+	 * @return the time in seconds it takes to go from source to destination
+	 */
+	public long travelDistanceBetween (Intersection source, Intersection destination) {
+		return immutablePathTable2.get(source.pathTableIndex).get(destination.pathTableIndex).travelTime;
+	}
 
 
 	/**
-	 * Gets the time it takes to move from a location on a first road to a location on a second road. 
+	 * Gets the time it takes to move from a location on a first road to a location on a second road.
 	 * This assumes traversal at speedlimit of the roads.
 	 *
 	 * @param source The location to depart from
@@ -100,8 +113,8 @@ public class CityMap {
 	 */
 	public long travelTimeBetween (LocationOnRoad source, LocationOnRoad destination) {
 		long travelTime = -1;
-		if (source.road == destination.road && source.travelTimeFromStartIntersection <= destination.travelTimeFromStartIntersection) { 
-			// If the two locations are on the same road and source is closer to the start intersection than destination, 
+		if (source.road == destination.road && source.travelTimeFromStartIntersection <= destination.travelTimeFromStartIntersection) {
+			// If the two locations are on the same road and source is closer to the start intersection than destination,
 			// then the travel time is the difference of travelTimeFromStartIntersection between source and destination.
 			travelTime = destination.travelTimeFromStartIntersection - source.travelTimeFromStartIntersection;
 		} else {
@@ -111,7 +124,30 @@ public class CityMap {
 			travelTime = travelTimeToEndIntersectionOfSource + travelTimeFromEndIntersectionOfSourceToStartIntersectionOfDestination + travelTimeFromStartIntersectionOfDestination;
 		}
 		return travelTime;
-	}        
+	}
+	/**
+	 * Gets the time it takes to move from a location on a first road to a location on a second road.
+	 * This assumes traversal at speedlimit of the roads.
+	 *
+	 * @param source The location to depart from
+	 * @param destination The location to arrive at
+	 * @return the time in seconds it takes to go from source to destination
+	 */
+	public long travelDistanceBetween (LocationOnRoad source, LocationOnRoad destination) {
+		long travelDistance = -1;
+		if (source.road == destination.road && source.travelTimeFromStartIntersection <= destination.travelTimeFromStartIntersection) {
+			// If the two locations are on the same road and source is closer to the start intersection than destination,
+			// then the travel time is the difference of travelTimeFromStartIntersection between source and destination.
+			travelDistance = destination.travelDistanceFromStartIntersection - source.travelDistanceFromStartIntersection;
+		} else {
+			//long travelTimeToEndIntersectionOfSource = source.road.travelTime - source.travelTimeFromStartIntersection;
+			//long travelTimeFromStartIntersectionOfDestination = destination.travelTimeFromStartIntersection;
+			travelDistance = travelDistanceBetween(source.road.to, destination.road.from);
+			travelDistance+=source.travelDistanceFromStartIntersection+destination.travelDistanceFromStartIntersection;
+			//travelTime = travelTimeToEndIntersectionOfSource + travelTimeFromEndIntersectionOfSourceToStartIntersectionOfDestination + travelTimeFromStartIntersectionOfDestination;
+		}
+		return travelDistance;
+	}
 
 	/**
 	 * @return { @code projector }
@@ -131,7 +167,7 @@ public class CityMap {
 	public Link getNearestLink(double longitude, double latitude){
 		double[] xy = projector.fromLatLon(latitude, longitude);
 		Point2D p = new Point2D.Double(xy[0], xy[1]);
-		return kdTree.nearest(p);    	
+		return kdTree.nearest(p);
 	}
 
 	/**
@@ -190,14 +226,74 @@ public class CityMap {
 		}
 
 		// Make the path table unmodifiable
-		makePathTableUnmodifiable(pathTable);
+		makePathTableUnmodifiable(pathTable,1);
 	}
+
+	/**
+	 * Compute all-pair shortest travel distances. This is done by computing one-to-all shortest travel distances
+	 * from each intersection using Dijkstra.
+	 */
+	public void calcTravelDistances() {
+		ArrayList<ArrayList<PathTableEntry>> pathTable2;
+
+		// initialize path table
+		pathTable2 = new ArrayList<ArrayList<PathTableEntry>>();
+		for (int i = 0; i < intersections.size(); i++) {
+			ArrayList<PathTableEntry> aList = new ArrayList<PathTableEntry>();
+			for (int j = 0; j < intersections.size(); j++) {
+				aList.add(null);
+			}
+			pathTable2.add(aList);
+		}
+
+		// creates a queue entry for each intersection
+		HashMap<Intersection, DijkstraQueueEntry> queueEntry = new HashMap<>();
+		for (Intersection i : intersections.values()) {
+			queueEntry.put(i, new DijkstraQueueEntry(i));
+		}
+
+		for (Intersection source : intersections.values()) {
+			// 'reset' every queue entry
+			for (DijkstraQueueEntry entry : queueEntry.values()) {
+				entry.cost = Long.MAX_VALUE;
+				entry.inQueue = true;
+			}
+
+			// source is set at distance 0
+			DijkstraQueueEntry sourceEntry = queueEntry.get(source);
+			sourceEntry.cost = 0;
+			pathTable2.get(source.pathTableIndex).set(source.pathTableIndex, new PathTableEntry(0L, source.pathTableIndex));
+
+			PriorityQueue<DijkstraQueueEntry> queue = new PriorityQueue<>(queueEntry.values());
+
+			while (!queue.isEmpty()) {
+				DijkstraQueueEntry entry = queue.poll();
+				entry.inQueue = false;
+
+				for (Road r : entry.intersection.getRoadsFrom()) {
+					DijkstraQueueEntry v = queueEntry.get(r.to);
+					if (!v.inQueue) continue;
+					long ncost = (long) (entry.cost + r.length);
+					if (v.cost > ncost) {
+						queue.remove(v);
+						v.cost = ncost;
+						pathTable2.get(source.pathTableIndex).set(v.intersection.pathTableIndex, new PathTableEntry(v.cost, entry.intersection.pathTableIndex));
+						queue.add(v);
+					}
+				}
+			}
+		}
+
+		// Make the path table unmodifiable
+		makePathTableUnmodifiable(pathTable2,2);
+	}
+
 
 	/**
 	 * Make a path table unmodifiable.
 	 * @param pathTable
 	 */
-	public void makePathTableUnmodifiable(ArrayList<ArrayList<PathTableEntry>> pathTable) {
+	public void makePathTableUnmodifiable(ArrayList<ArrayList<PathTableEntry>> pathTable, int code) {
 		ArrayList<ImmutableList<PathTableEntry>> aListOfImmutableList = new ArrayList<ImmutableList<PathTableEntry>>();
 		for (int i = 0; i < intersections.size(); i++) {
 			ArrayList<PathTableEntry> aListOfPathTableEntries = pathTable.get(i);
@@ -205,8 +301,11 @@ public class CityMap {
 			aListOfPathTableEntries.clear();
 		}
 		pathTable.clear();
+		if(code==1)
+			immutablePathTable = ImmutableList.copyOf(aListOfImmutableList);
+		else
+			immutablePathTable2 = ImmutableList.copyOf(aListOfImmutableList);
 
-		immutablePathTable = ImmutableList.copyOf(aListOfImmutableList);
 	}
 
 	/**
@@ -271,13 +370,13 @@ public class CityMap {
 
 	/**
 	 * @return { @code intersections }
-	 */	
+	 */
 	public Map<Long, Intersection> intersections() {
 		return intersections;
 	}
 
 	/**
-	 * 
+	 *
 	 * @return a deep copy of the map
 	 */
 	public CityMap makeCopy() {
@@ -291,9 +390,9 @@ public class CityMap {
 					// create start vertex if not existing yet
 					if (!verticesCopy.containsKey(link.from.id)) {
 						// create a new vertex
-						Vertex vertexFrom = new Vertex(link.from); 
+						Vertex vertexFrom = new Vertex(link.from);
 						verticesCopy.put(vertexFrom.id, vertexFrom);
-					}				
+					}
 					// create end vertex if not existing yet
 					if (!verticesCopy.containsKey(link.to.id)) {
 						// create a new vertex
@@ -350,15 +449,15 @@ public class CityMap {
 		cityMap.immutablePathTable = immutablePathTable;
 		cityMap.projector = projector;
 		cityMap.kdTree = kdTree;
-		
+
 		cityMap.intersectionsByPathTableIndex = new HashMap<Integer, Intersection>();
 		for (Intersection intersection : cityMap.intersections.values()) {
 			cityMap.intersectionsByPathTableIndex.put(intersection.pathTableIndex, intersection);
 		}
-		
+
 		return cityMap;
 	}
-	
+
 	/**
 	 * Compute the time zone ID of the map based on an arbitrary location of the map.
 	 * It is assumed that the entire map falls into a single time zone. In other words,
@@ -369,7 +468,7 @@ public class CityMap {
 		// get an arbitrary location of the map
 		Intersection intersection = intersections.values().toArray(new Intersection[intersections.size()])[0];
 		// get the time zone id
-		Logger.getRootLogger().setLevel(Level.OFF); // Do this just so that there is no warning message. 
+		Logger.getRootLogger().setLevel(Level.OFF); // Do this just so that there is no warning message.
 		TimeZoneEngine engine = TimeZoneEngine.initialize();
 		Optional<ZoneId> zoneId = engine.query(intersection.latitude, intersection.longitude);
 
