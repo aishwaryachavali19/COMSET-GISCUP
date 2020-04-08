@@ -7,6 +7,7 @@ import java.util.*;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
+import com.sun.org.apache.xpath.internal.operations.Bool;
 import me.tongfei.progressbar.*;
 
 
@@ -182,13 +183,17 @@ public class Simulator {
 		HashMap<Long, ArrayList<Long>> resPrefList= new HashMap<Long, ArrayList<Long>>();
 		//HashMap<Long,HashMap<Long,Long> > resPrefList= new HashMap<Long, HashMap<Long,Long>>();
 
+		HashMap<Long, Long>agentFree=new HashMap<>();
+		HashMap<Long, Long>resFree=new HashMap<>();
+		HashMap<Long,Integer>indexTrackForRes=new HashMap<>();
 
 		long min= Long.MAX_VALUE;
 		for(Event event : events)
 		{
 			if(event.isResource())
 			{
-				//LocationOnRoad bestAgentLocationOnRoad = null;
+				resFree.put(event.id,-1L);
+				indexTrackForRes.put(event.id,0);
 				LinkedHashMap<Long,Long> currentArrivalTime=new LinkedHashMap<>();
 				for (AgentEvent agent : emptyAgents) {
 
@@ -224,52 +229,15 @@ public class Simulator {
 
 			}
 
-
-
-				/*
-				if (earliest > ((ResourceEvent) event).availableTime + ResourceMaximumLifeTime) {
-					waitingResources.add(((ResourceEvent) event));
-					((ResourceEvent) event).time += ResourceMaximumLifeTime;
-					((ResourceEvent) event).eventCause = ((ResourceEvent) event).EXPIRED;
-					Logger.getLogger(this.getClass().getName()).log(Level.INFO, "Setup expiration event at time " + this.time, this);
-					return this;
-				} else { // make assignment
-					// update the statistics
-					long cruiseTime = time - bestAgent.startSearchTime;
-					long approachTime = earliest - time;
-					long searchTime = cruiseTime + approachTime;
-					long waitTime = earliest - ((ResourceEvent) event).availableTime;
-					totalAgentCruiseTime += cruiseTime;
-					totalAgentApproachTime += approachTime;
-					totalAgentSearchTime += searchTime;
-					totalResourceWaitTime += waitTime;
-					totalResourceTripTime += ((ResourceEvent) event).tripTime;
-					totalAssignments++;
-					// Inform the assignment to the agent.
-					bestAgent.assignedTo(bestAgentLocationOnRoad, time, id, pickupLoc, dropoffLoc);
-					// "Label" the agent as occupied.
-					emptyAgents.remove(bestAgent);
-					events.remove(bestAgent);
-					Logger.getLogger(this.getClass().getName()).log(Level.INFO, "Assigned to agent id = " + bestAgent.id + " currently at " + bestAgent.loc, this);
-					bestAgent.setEvent(earliest + tripTime, dropoffLoc, AgentEvent.DROPPING_OFF);
-					Logger.getLogger(this.getClass().getName()).log(Level.INFO, "From agent to resource = " + approachTime + " seconds.", this);
-					Logger.getLogger(this.getClass().getName()).log(Level.INFO, "From pickupLoc to dropoffLoc = " + tripTime + " seconds.", this);
-					Logger.getLogger(this.getClass().getName()).log(Level.INFO, "cruise time = " + cruiseTime + " seconds.", this);
-					Logger.getLogger(this.getClass().getName()).log(Level.INFO, "approach time = " + approachTime + " seconds.", this);
-					Logger.getLogger(this.getClass().getName()).log(Level.INFO, "search time = " + searchTime + " seconds.", this);
-					Logger.getLogger(this.getClass().getName()).log(Level.INFO, "wait time = " + waitTime + " seconds.", this);
-					Logger.getLogger(this.getClass().getName()).log(Level.INFO, "Next agent trigger time = " + bestAgent.time, this);
-					// Add the event back to the event queue.
-					return bestAgent;
-				}
-				*/
 		}
 
+		//Calculate the preference list for agents
 
 		//HashMap<Long,HashMap<Long,Double> > agentPrefList= new HashMap<Long, HashMap<Long,Double>>();
 		HashMap<Long, ArrayList<Long>> agentPrefList= new HashMap<Long, ArrayList<Long>>();
 		for(AgentEvent agent: emptyAgents)
 		{
+			agentFree.put(agent.id,-1L);
 			HashMap<Long,Double> currentBenefit=new HashMap<>();
 			for(Event event : events)
 			{
@@ -313,7 +281,7 @@ public class Simulator {
 			}
 			System.out.println();
 		}
-		*/
+
 		//Agent preference list with only resource IDs
 		System.out.println("Agent pref list:");
 		for(ArrayList<Long> innerList : agentPrefList.values()) {
@@ -332,7 +300,7 @@ public class Simulator {
 			}
 			System.out.println();
 		}
-		*/
+
 
 		//Resource preference list with only agent IDs
 		System.out.println("\n\nResource pref list:");
@@ -343,6 +311,82 @@ public class Simulator {
 			}
 			System.out.println();
 		}
+		*/
+		//Stable Matching algorithm
+
+
+		int freeRes=resFree.size();
+		while(freeRes >0)
+		{
+			System.out.println("freeRes:"+freeRes);
+			if(freeRes==1)
+			{
+				break;
+			}
+			for(Long resId: resFree.keySet()) //For all the resources
+			{
+				if((resFree.get(resId)==-1L) && (indexTrackForRes.get(resId)!=10)) //The resource is free and has some agent left to propose
+				{
+					ArrayList<Long>PrefList=resPrefList.get(resId);
+					int i=indexTrackForRes.get(resId);
+					while(i<PrefList.size())
+					{
+						Long agentId=PrefList.get(i);
+						if(agentFree.get(agentId)==-1L) //The agent is free. Then match the resource with that agent.
+						{
+							resFree.put(resId,agentId);
+
+							agentFree.put(agentId,resId);
+							indexTrackForRes.put(resId,(i+1));
+							freeRes--;
+							break;
+
+						}
+						else							//Agent is already matched to another resource. Check if the current res is preferred
+						{
+							ArrayList<Long>agentPref=agentPrefList.get(agentId);
+							Long currentMatchedRes=agentFree.get(agentId);
+							int indexCurrentMatch=agentPref.indexOf(currentMatchedRes);
+							int index=agentPref.indexOf(resId);
+							if(index<indexCurrentMatch)
+							{
+								resFree.put(resId,agentId);
+								resFree.put(currentMatchedRes,-1L); //Mark the previous resource as free
+								indexTrackForRes.put(resId,i+1);
+								agentFree.put(agentId,resId);
+								break;
+							}
+						}
+						i++;
+						if(i==10)
+						{
+							indexTrackForRes.put(resId,10);
+							freeRes--;
+						}
+
+					}
+				}
+
+			}
+		}
+		System.out.println("The matching is as follows for resources:");
+		for(Long r_id : resFree.keySet() ) {
+
+
+			System.out.print(r_id+","+resFree.get(r_id));
+
+			System.out.println();
+		}
+
+		System.out.println("The matching is as follows for agents:");
+		for(Long r_id : agentFree.keySet() ) {
+
+
+			System.out.print(r_id+","+agentFree.get(r_id));
+
+			System.out.println();
+		}
+
 
 	}
 
