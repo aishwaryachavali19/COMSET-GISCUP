@@ -23,10 +23,10 @@ import MapCreation.MapCreator;
 public class CSVNewYorkParser {
 
 	// absolute path to csv file to be parsed
-	private String path; 
+	public String path;
 
 	// list of all resources
-	private ArrayList<Resource> resources = new ArrayList<>();    
+	public ArrayList<Resource> resources = new ArrayList<>();
 
 	DateTimeFormatter dtf;
 
@@ -52,7 +52,7 @@ public class CSVNewYorkParser {
 	 * converted
 	 * @return long value of the timestamp string
 	 */
-	private Long dateConversion(String timestamp) {
+	public Long dateConversion(String timestamp) {
 		long l = 0L;
 		LocalDateTime ldt = LocalDateTime.parse(timestamp, dtf);
 		ZonedDateTime zdt = ZonedDateTime.of(ldt, zoneId);

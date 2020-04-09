@@ -96,17 +96,15 @@ public class Main {
 			if (!displayLogging) {
 				LogManager.getLogManager().reset();
 			}
-			
-			simulator.configure(mapJSONFile, datasetFile, numberOfAgents, boundingPolygonKMLFile, resourceMaximumLifeTime, agentPlacementSeed, speedReduction);
-
+            long assignmentPeriod= -1;
+            String assignmentPeriodArg = prop.getProperty("comset.assignmentPeriod").trim();
+            if (assignmentPeriodArg != null) {
+                assignmentPeriod = Long.parseLong(assignmentPeriodArg);
+            }
+            simulator.configure(mapJSONFile, datasetFile, numberOfAgents, boundingPolygonKMLFile, resourceMaximumLifeTime, agentPlacementSeed, speedReduction,assignmentPeriod);
 
 		//	simulator.stableMarriage();
-            List<List<Double>> costMatrix = new ArrayList<List<Double>>();
-            costMatrix = simulator.createCostMatrix();
-            System.out.println("Final matrix size " +costMatrix.size());
-            double[][] array = costMatrix.stream().map(l->l.stream().mapToDouble(i->i).toArray()).toArray(double[][]::new);
-            double cost= HungarianAlgorithm.hgAlgorithm(array,"max");
-            System.out.println(cost);
+            //simulator.runOptimal();
 			simulator.run();
 		} catch (Exception ex) {
 			ex.printStackTrace();

@@ -105,6 +105,8 @@ public class Simulator {
 
 	//Snehal
 	protected GeoProjector geoProj;
+	protected long FirstResourceTime;
+	protected int numberOfPools;
 	/**
 	 * Constructor of the class Main. This is made such that the type of
 	 * agent/resourceAnalyzer used is not hardcoded and the users can choose
@@ -134,7 +136,7 @@ public class Simulator {
 	 * @param agentPlacementRandomSeed The see for the random number of generator when placing the agents
 	 * @param speedReduction The speed reduction to accommodate traffic jams and turn delays
 	 */
-	public void configure(String mapJSONFile, String resourceFile, Long totalAgents, String boundingPolygonKMLFile, Long maximumLifeTime, long agentPlacementRandomSeed, double speedReduction) {
+	public void configure(String mapJSONFile, String resourceFile, Long totalAgents, String boundingPolygonKMLFile, Long maximumLifeTime, long agentPlacementRandomSeed, double speedReduction,long assignmentPeriod) {
 
 		this.mapJSONFile = mapJSONFile;
 
@@ -161,8 +163,14 @@ public class Simulator {
 		// Make a map copy for agents to use so that an agent cannot modify the map used by
 		// the simulator
 		mapForAgents = map.makeCopy();
-		/*CSVNewYorkParser parser = new CSVNewYorkParser(this.resourceFile, map.computeZoneId());
-		try {
+
+		MapWithData mapWD = new MapWithData(map, this.resourceFile, agentPlacementRandomSeed);
+
+		int index =0, agent_index=0;
+		boolean firstRecordOfPool = true;
+		CSVNewYorkParser parser = new CSVNewYorkParser(this.resourceFile, map.computeZoneId());
+		try
+		{
 		Scanner sc = new Scanner(new File(parser.path));   //scanner will scan the file specified by path
 		sc.useDelimiter(",|\n");    //scanner will skip over "," and "\n" found in file
 		sc.nextLine(); // skip the header
@@ -171,55 +179,93 @@ public class Simulator {
 		//each line in input file will contain 4 tokens for the scanner and will be in the format : latitude longitude time type
 		//per line of input file we will create a new TimestampAgRe object
 		// and save the 4 tokens of each line in the corresponding field of the TimestampAgRe object
-		while (sc.hasNext()) {
-				sc.next();// skip first VendorID
-				String pickuptime = sc.next();
-				DateFormat format = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss", Locale.ENGLISH);
-				Calendar date = Calendar.getInstance();
-				date.setTime(format.parse(pickuptime));
-				int day = date.get(Calendar.DATE); // 5
-				int minutes = date.get(Calendar.HOUR); // 30
-				long time = parser.dateConversion(pickuptime);
-				sc.next();// skip these fields
-				sc.next();
-				sc.next();
-				double pickupLon = Double.parseDouble(sc.next());
-				double pickupLat = Double.parseDouble(sc.next());
-				sc.next();// skip these fields
-				sc.next();
-				double dropoffLon = Double.parseDouble(sc.next());
-				double dropoffLat = Double.parseDouble(sc.next());
-				sc.nextLine(); //skip rest of fileds in this line
+		ArrayList<Resource> resources = new ArrayList<>();
+			String pickuptime=null;
+			double pickupLon =0.0;
+			double pickupLat = 0.0;
+			double dropoffLon = 0.0;
+			double dropoffLat = 0.0;
+			long time=0;
+			long nextRecord = 0;
+			//int numberOfResourcesPool=0;
+			while (sc.hasNext()) {
+				resources = new ArrayList<>();
+				//numberOfResourcesPool=0;
+				numberOfPools++;
+				while(index==0) {
 
-				// Only keep the resources such that both pickup location and dropoff location are within the bounding polygon.
-				if (!(MapCreator.insidePolygon(pickupLon, pickupLat) && MapCreator.insidePolygon(dropoffLon, dropoffLat))) {
-					continue;
+					pickuptime = sc.next();
+					time = parser.dateConversion(pickuptime);
+					FirstResourceTime = time;
+					pickupLon = Double.parseDouble(sc.next());
+					pickupLat = Double.parseDouble(sc.next());
+					dropoffLon = Double.parseDouble(sc.next());
+					dropoffLat = Double.parseDouble(sc.next());
+					nextRecord = parser.dateConversion(sc.next());
+					index = 1;
+
+					// Only keep the resources such that both pickup location and dropoff location are within the bounding polygon.
+					if (!(MapCreator.insidePolygon(pickupLon, pickupLat) && MapCreator.insidePolygon(dropoffLon, dropoffLat))) {
+						index = 0;
+						continue;
+
+					}
+					resources.add(new Resource(pickupLat, pickupLon, dropoffLat, dropoffLon, time)); //create new resource with the above fields
+				}//time = parser.dateConversion(pickuptime);
+				while( nextRecord<= (time + assignmentPeriod) ) {
+					firstRecordOfPool =false;
+
+					pickupLon = Double.parseDouble(sc.next());
+					pickupLat = Double.parseDouble(sc.next());
+					dropoffLon = Double.parseDouble(sc.next());
+					dropoffLat = Double.parseDouble(sc.next());
+					// Only keep the resources such that both pickup location and dropoff location are within the bounding polygon.
+					if (!(MapCreator.insidePolygon(pickupLon, pickupLat) && MapCreator.insidePolygon(dropoffLon, dropoffLat))) {
+						nextRecord = parser.dateConversion(sc.next());
+						continue;
+					}
+
+					resources.add(new Resource(pickupLat, pickupLon, dropoffLat, dropoffLon, time)); //create new resource with the above fields
+					if(sc.hasNext())
+						nextRecord = parser.dateConversion(sc.next());
+					else break;
+				}
+				time =nextRecord;
+			firstRecordOfPool =true;
+			// map match resources
+				System.out.println("Loading and map-matching resources..." + numberOfPools);
+				long latestResourceTime = mapWD.createMapWithData(this, resources);
+
+				// The simulation end time is the expiration time of the last resource.
+				this.simulationEndTime = latestResourceTime;
+				if(agent_index ==0)
+				{
+					// Deploy agents at random locations of the map.
+					System.out.println("Randomly placing " + this.totalAgents + " agents on the map...");
+					agents = mapWD.placeAgentsRandomly(this);
+					agent_index=1;
 				}
 
-				parser.resources.add(new Resource(pickupLat, pickupLon, dropoffLat, dropoffLon, time)); //create new resource with the above fields
+				// Initialize the event queue.
+				events = mapWD.getEvents();
+				createCostMatrix(resources.size());
 			}
 			sc.close();
 		} catch (Exception e) {
 
 			e.printStackTrace();
-		}*/
+		}
 
-		MapWithData mapWD = new MapWithData(map, this.resourceFile, agentPlacementRandomSeed);
 
-		// map match resources
-		System.out.println("Loading and map-matching resources...");
-		long latestResourceTime = mapWD.createMapWithData(this);
-
-		// The simulation end time is the expiration time of the last resource.
-		this.simulationEndTime = latestResourceTime;
-
-		// Deploy agents at random locations of the map.
-		System.out.println("Randomly placing " + this.totalAgents + " agents on the map...");
-		agents = mapWD.placeAgentsRandomly(this);
-
-		// Initialize the event queue.
-		events = mapWD.getEvents();
 	}
+	/*public void runOptimal(){
+		for(int i=0;i < numberOfPools; i++)
+		{
+			System.out.println("Running Optimal Assignment Algorithm...");
+			List<List<Double>> costMatrix = new ArrayList<List<Double>>();
+			FirstResourceTime= createCostMatrix(FirstResourceTime);
+		}
+	}*/
 
 	/**
 	 * My method to try and create preference lists of resources
@@ -278,7 +324,7 @@ public class Simulator {
 		}
 	}
 	//Snehal
-	public List<List<Double>> createCostMatrix(){
+	public void createCostMatrix(int numberOfResources){
 		List<List<Double>> costMatrix = new ArrayList<List<Double>>();
 		List<Double> resAgent = new ArrayList<>();
 		List<AgentEvent> agentInResList = new ArrayList<>();//Snehal
@@ -287,10 +333,12 @@ public class Simulator {
 		Map<AgentEvent,LocationOnRoad> map_agentLocationOnRoad = new HashMap<>();
 		Map<AgentEvent,Long> AgentArriveTime = new HashMap<>();
 		int id=0;
-		for(Event event : events)
-		{
+		System.out.println(events.peek().time);
+		for(Event event:events){
 			if(event.isResource())
 			{
+				numberOfResources--;
+				//events.remove(event);
 				agentInResList = new ArrayList<>();//Snehal
 				resAgent = new ArrayList<>();//Snehal
 				event=(ResourceEvent)event;
@@ -366,6 +414,7 @@ public class Simulator {
 			if(array[assignment[i][0]][assignment[i][1]] != 0.0) {
 				System.out.println("Resource Id " + resEvent.id + " assigned to " + "Agent Id " + ag.get(assignment[i][1]).id + " Benefit " + array[assignment[i][0]][assignment[i][1]]);
 				waitingResources.remove(resEvent);
+				events.remove(resEvent);
 				AgentEvent bestAgent = ag.get(assignment[i][1]); //Agent assigned to the resource
 				// Inform the assignment to the agent.
 				bestAgent.assignedTo(map_agentLocationOnRoad.get(bestAgent),resEvent.time, resEvent.id, resEvent.pickupLoc, resEvent.dropoffLoc);
@@ -381,7 +430,8 @@ public class Simulator {
 		//double finalcost = cost - repCost;
 		//System.out.println("Number of repetitive costs "+ count);
 		//System.out.println("Final cost after deducting unassigned resource cost " + finalcost);
-		return costMatrix;
+		//return costMatrix;
+
 	}
 
 	/**
