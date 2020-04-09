@@ -1,5 +1,8 @@
 package COMSETsystem;
 
+import javax.naming.SizeLimitExceededException;
+import java.util.LinkedList;
+
 /**
  * The BaseAgent class is the class the participants should extend in order to create an Agent that will be used in
  * Simulator to run the simulation. The participants should extend the BaseAgent class to implement their agent search
@@ -33,7 +36,7 @@ public abstract class BaseAgent {
 	 * 
 	 * This method must be overridden in every Agent implementation.
 	 */
-	public abstract void planSearchRoute(LocationOnRoad currentLocation, long currentTime); 
+	public abstract void planSearchRoute(LinkedList<Intersection> path);
 
 	/**
 	 * This method must be overridden in every Agent implementation in order to return an Intersection that the
@@ -47,7 +50,10 @@ public abstract class BaseAgent {
 	 * @param currentTime The time at which the method is invoked
 	 * @return Intersection that the Agent is going to move to
 	 */
-	public abstract Intersection nextIntersection(LocationOnRoad currentLocation, long currentTime); 
+	public abstract Intersection nextIntersection(LocationOnRoad currentLocation, long currentTime);
+
+	public abstract void clearRoute();
+
 
 	/**
 	 * This method is to inform the agent that it is assigned to a resource. No action is necessary from the agent. The agent

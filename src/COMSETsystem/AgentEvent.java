@@ -46,6 +46,10 @@ public class AgentEvent extends Event {
 	// The cause of the AgentEvent to be triggered, either INTERSECTION_REACHED or DROPPING_OFF.
 	public int eventCause;
 
+	Random rnd;
+
+	public static ArrayList<Intersection> allHubs = new ArrayList<Intersection>();
+
 	/*
 	 * The time at which the agent started to search for a resource. This is also the
 	 * time at which the agent drops off a resource.
@@ -136,87 +140,43 @@ public class AgentEvent extends Event {
 	Event dropoffHandler() {
 		startSearchTime = time;
 		Logger.getLogger(this.getClass().getName()).log(Level.INFO, "Dropoff at " + loc, this);
-		// Only check the following when an agent drops off a resource. 
-		// Check if there are resources waiting to be picked up by an agent.
-		if (simulator.waitingResources.size() > 0) {
-			// get the closest resource that will not expire before the agent reaches it
-			ResourceEvent bestResource = null;
-			long earliest = Long.MAX_VALUE;
-			for (ResourceEvent res : simulator.waitingResources) {
-				// If res is in waitingResources, then it must have not expired yet
-				// testing null pointer exception 
-				long travelTime = Long.MAX_VALUE;
-				if (loc == null) {
-					System.out.println("loc is null");
-				} else if (res.pickupLoc == null) {
-					System.out.println("res.loc is null");
-				} else {
-					travelTime = simulator.map.travelTimeBetween(loc, res.pickupLoc);
-				}
-
-				if (travelTime != Long.MAX_VALUE) {
-					// if the resource is reachable before expiration
-					long arriveTime = time + travelTime;
-					if (arriveTime <= res.expirationTime && arriveTime < earliest) {
-						earliest = arriveTime;
-						bestResource = res;
-					}
-				}
-			}
-
-			// if a a waiting resource is reachable in time by this agent make an assignment
-			if (bestResource != null) {
-				// update the statistics				
-				long cruiseTime = time - startSearchTime; 
-				long approachTime = earliest - time;
-				long searchTime = cruiseTime + approachTime;
-				long waitTime = earliest - bestResource.availableTime;
-				simulator.totalAgentCruiseTime += cruiseTime;
-				simulator.totalAgentApproachTime += approachTime;
-				simulator.totalAgentSearchTime += searchTime;
-				simulator.totalAssignments++;
-				simulator.totalResourceWaitTime += waitTime;
-				simulator.totalResourceTripTime += bestResource.tripTime;
-
-				// Inform the assignment to the agent.
-	            assignedTo(loc, time, bestResource.id, bestResource.pickupLoc, bestResource.dropoffLoc);
-
-				// "Label" the agent as occupied
-				simulator.emptyAgents.remove(this);
-
-				simulator.waitingResources.remove(bestResource);
-				simulator.events.remove(bestResource); // resource is pickup and does not expire anymore. 
-
-				// set time and location of the next trigger 
-				setEvent(earliest + bestResource.tripTime, bestResource.dropoffLoc, DROPPING_OFF);
-
-				Logger.getLogger(this.getClass().getName()).log(Level.INFO, "Assigned to resource id = " + bestResource.id + " with pickupLoc at " + bestResource.pickupLoc + " and dropoffLoc at " + bestResource.dropoffLoc, this);
-				Logger.getLogger(this.getClass().getName()).log(Level.INFO, "From agent to resource = " + approachTime + " seconds.", this);
-				Logger.getLogger(this.getClass().getName()).log(Level.INFO, "From pickupLoc to dropoffLoc = " + (time - earliest) + " seconds.", this);
-				Logger.getLogger(this.getClass().getName()).log(Level.INFO, "cruise time = " + cruiseTime + " seconds.", this);
-				Logger.getLogger(this.getClass().getName()).log(Level.INFO, "approach time = " + approachTime + " seconds.", this);
-				Logger.getLogger(this.getClass().getName()).log(Level.INFO, "search time = " + searchTime + " seconds.", this);
-				Logger.getLogger(this.getClass().getName()).log(Level.INFO, "wait time = " + waitTime + " seconds.", this);
-				Logger.getLogger(this.getClass().getName()).log(Level.INFO, "Next trigger time = " + time, this);
-				return this;
-			} else {
-				// Let agent plan a search route after the current dropoff.
-				LocationOnRoad locAgentCopy = simulator.agentCopy(loc);
-				agent.planSearchRoute(locAgentCopy, time);
-			}
-		}
-
-		// no resources have been assigned to the agent 
 		// so if the agent was not empty, make it empty for other resources
 		if (!simulator.emptyAgents.contains(this)) {
 			// "Label" the agent as empty.
 			simulator.emptyAgents.add(this);
 		}
-		// move to the end intersection of the current road
-		long nextEventTime = time + loc.road.travelTime - loc.travelTimeFromStartIntersection;
-		LocationOnRoad nextLoc = new LocationOnRoad(loc.road, loc.road.travelTime);
-		setEvent(nextEventTime, nextLoc, INTERSECTION_REACHED);
 
+		rnd = new Random(10);
+		if (allHubs.size() == 0) {
+			for(int i=0; i<10; i++) {
+				int hubIndex = rnd.nextInt(simulator.map.intersections().size());
+				Intersection[] intersectionArray = simulator.map.intersections().values().toArray(new Intersection[simulator.map.intersections().size()]);
+				Intersection hub = intersectionArray[hubIndex];
+				allHubs.add(hub);
+			}
+		}
+
+		LocationOnRoad currentLocation = simulator.agentCopy(loc);
+		Intersection sourceIntersection = currentLocation.road.to;
+		Intersection nearest_Hub = null;
+		Long minTime = Long.MAX_VALUE;
+		for (Intersection hub : allHubs) {
+			Long travelTime = simulator.map.travelTimeBetween(sourceIntersection, hub);
+			if (travelTime < minTime) {
+				minTime = travelTime;
+				nearest_Hub = hub;
+			}
+		}
+
+		if (nearest_Hub != sourceIntersection) {
+			LinkedList<Intersection> shortestPath;
+			shortestPath = simulator.map.shortestTravelTimePath(sourceIntersection, nearest_Hub);
+			agent.planSearchRoute(shortestPath);
+
+		}
+		else {
+			agent.clearRoute();
+		}
 		return this;
 	}
 
