@@ -97,8 +97,8 @@ public class MapWithData {
 	 */
 
 	public long createMapWithData(Simulator simulator) {
-		long window=2;
-		window*=60;
+		long window=30;
+		//window*=60;
 		CSVNewYorkParser parser = new CSVNewYorkParser(resourceFile, zoneId);
 		ArrayList<Resource> resourcesParsed = parser.parse();
 		long startWindowTime=resourcesParsed.get(0).getTime();

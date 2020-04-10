@@ -194,6 +194,7 @@ public class Simulator {
 			if(event.isResource())
 			{
 				resMatches.put(event.id,-1L);
+				//waitingResources.;
 				indexTrackForRes.put(event.id,0);
 				LinkedHashMap<Long,Long> currentArrivalTime=new LinkedHashMap<>();
 				for (AgentEvent agent : emptyAgents) {
@@ -297,20 +298,25 @@ public class Simulator {
 		*/
 		//Agent preference list with only resource IDs
 		System.out.println("Agent pref list:");
-		//agent IDs for pref list
+
 		/*for(Long key: agentPrefList.keySet()){
 			//ArrayList<Long> innerList = agentPrefList.get(key);
 			System.out.println("Keys:"+key);
 		}*/
+		//agent IDs for pref list
 		int j=1;
-		ArrayList<Long> agentKeys = null;
+		ArrayList<Long> agentKeys = new ArrayList<>();
 		for(Long key: agentPrefList.keySet()) {
-			agentKeys = agentPrefList.get(key);
+			agentKeys.add(key);
 		}
+		//Printing
 		for(ArrayList<Long> innerList : agentPrefList.values()) {
 				if(!innerList.isEmpty()) {
-					if(j<agentKeys.size())
-					System.out.println("Agent:" + agentKeys.get(j++));
+					//System.out.println("inside !innerList.isEmpty()"+"  agentKeys.size():"+agentKeys.size() +"agentPreflist.size():"+agentPrefList.size() );
+					if(j<agentKeys.size()) {
+						//System.out.println("inside !j<agentKeys.size()");
+						System.out.println("Agent:" + agentKeys.get(j++));
+					}
 					for (Long number : innerList) {
 						System.out.print(number + ",");
 					}
@@ -378,6 +384,7 @@ public class Simulator {
 							{
 								resMatches.put(resId,agentId);
 								resMatches.put(currentMatchedRes,-1L); //Mark the previous resource as free
+								//waitingResources.add();
 								indexTrackForRes.put(resId,i+1);
 								agentMatches.put(agentId,resId);
 								break;
