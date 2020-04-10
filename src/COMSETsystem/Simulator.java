@@ -7,7 +7,7 @@ import java.util.*;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
-import com.sun.org.apache.xpath.internal.operations.Bool;
+//import com.sun.org.apache.xpath.internal.operations.Bool;
 import me.tongfei.progressbar.*;
 
 
@@ -213,7 +213,7 @@ public class Simulator {
 					if(arriveTime<((ResourceEvent) event).expirationTime)
 					{
 						currentArrivalTime.put(agent.id,arriveTime);
-						System.out.println("Added to customer pref list.");
+						//System.out.println("Added to customer pref list.");
 					}
 
 
@@ -297,11 +297,26 @@ public class Simulator {
 		*/
 		//Agent preference list with only resource IDs
 		System.out.println("Agent pref list:");
+		//agent IDs for pref list
+		/*for(Long key: agentPrefList.keySet()){
+			//ArrayList<Long> innerList = agentPrefList.get(key);
+			System.out.println("Keys:"+key);
+		}*/
+		int j=1;
+		ArrayList<Long> agentKeys = null;
+		for(Long key: agentPrefList.keySet()) {
+			agentKeys = agentPrefList.get(key);
+		}
 		for(ArrayList<Long> innerList : agentPrefList.values()) {
-			for(Long number : innerList) {
-				System.out.print(number+",");
-			}
-			System.out.println();
+				if(!innerList.isEmpty()) {
+					if(j<agentKeys.size())
+					System.out.println("Agent:" + agentKeys.get(j++));
+					for (Long number : innerList) {
+						System.out.print(number + ",");
+					}
+
+					System.out.println();
+				}
 		}
 		/*
 		//To print resource preference list along with waiting time. Need to change code a little to get the required o/p
@@ -331,7 +346,7 @@ public class Simulator {
 		int freeRes=resMatches.size();
 		while(freeRes >0)
 		{
-			System.out.println("freeRes:"+freeRes);
+			//System.out.println("freeRes:"+freeRes);
 
 			for(Long resId: resMatches.keySet()) //For all the resources
 			{
