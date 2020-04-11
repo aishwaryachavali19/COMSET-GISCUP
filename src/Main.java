@@ -1,6 +1,6 @@
 import COMSETsystem.BaseAgent;
 import COMSETsystem.Simulator;
-
+import UserExamples.HungarianAlgorithm;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.util.*;
@@ -96,8 +96,12 @@ public class Main {
 			if (!displayLogging) {
 				LogManager.getLogManager().reset();
 			}
-			
-			simulator.configure(mapJSONFile, datasetFile, numberOfAgents, boundingPolygonKMLFile, resourceMaximumLifeTime, agentPlacementSeed, speedReduction);
+            long assignmentPeriod= -1;
+            String assignmentPeriodArg = prop.getProperty("comset.assignmentPeriod").trim();
+            if (assignmentPeriodArg != null) {
+                assignmentPeriod = Long.parseLong(assignmentPeriodArg);
+            }
+            simulator.configure(mapJSONFile, datasetFile, numberOfAgents, boundingPolygonKMLFile, resourceMaximumLifeTime, agentPlacementSeed, speedReduction,assignmentPeriod);
 
 
 			simulator.stableMarriage();
