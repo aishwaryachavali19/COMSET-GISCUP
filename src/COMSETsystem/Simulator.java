@@ -52,6 +52,7 @@ public class Simulator {
 	// Full path to an OSM JSON map file
 	protected String mapJSONFile;
 
+	protected long poolStartTime;
 
 	// Full path to a TLC New York Yellow trip record file
 	protected String resourceFile = null;
