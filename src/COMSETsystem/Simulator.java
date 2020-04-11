@@ -163,6 +163,7 @@ public class Simulator {
 		// Pre-compute shortest travel times between all pairs of intersections.
 		System.out.println("Pre-computing all pair travel times...");
 		map.calcTravelTimes();
+		System.out.println("Pre-computing all pair travel distances...");
 		map.calcTravelDistances();
 		// Make a map copy for agents to use so that an agent cannot modify the map used by
 		// the simulator
@@ -196,23 +197,29 @@ public class Simulator {
 	public void stableMarriage()
 	{
 		HashMap<Long, ArrayList<Long>> resPrefList= new HashMap<Long, ArrayList<Long>>();
-		//HashMap<Long,HashMap<Long,Long> > resPrefList= new HashMap<Long, HashMap<Long,Long>>();
+		HashMap<Long,HashMap<Long,LocationOnRoad> > resAgentLocationOnRoad= new HashMap<Long, HashMap<Long,LocationOnRoad>>();
 
 		HashMap<Long, Long>agentMatches=new HashMap<>();
 		HashMap<Long, Long>resMatches=new HashMap<>();
 		HashMap<Long,Integer>indexTrackForRes=new HashMap<>();
 
-		//TODO Check if the arrival time is less than resource expiration and then add it to the preference list
+		HashMap<Long,ResourceEvent>mapResIdToResEvents=new HashMap<>();
+		HashMap<Long,HashMap<Long,Long> > resAgentArriveTime= new HashMap<Long, HashMap<Long,Long>>();
+		System.out.println("Resources:"+ResourceEvent.resList.size());
 		long min= Long.MAX_VALUE;
-		for(Event event : events)
+		for(ResourceEvent event : ResourceEvent.resList)
 		{
+			mapResIdToResEvents.put(event.id,event);
+
 			System.out.println("before isResource");
-			if(event.isResource())
-			{
+			//if(event.isResource())
+			//{
 				resMatches.put(event.id,-1L);
 				//waitingResources.;
 				indexTrackForRes.put(event.id,0);
 				LinkedHashMap<Long,Long> currentArrivalTime=new LinkedHashMap<>();
+				HashMap<Long,LocationOnRoad>mapResAgentLoc=new HashMap<>();
+				HashMap<Long,Long>mapResAgentArrivalTime=new HashMap<>();
 				for (AgentEvent agent : emptyAgents) {
 
 
@@ -231,11 +238,15 @@ public class Simulator {
 					if(arriveTime<((ResourceEvent) event).expirationTime)
 					{
 						currentArrivalTime.put(agent.id,arriveTime);
+						mapResAgentLoc.put(agent.id,agentLocationOnRoad);
+						mapResAgentArrivalTime.put(agent.id,arriveTime);
 						System.out.println("Added to customer pref list.");
 					}
 
 
 				}
+				resAgentLocationOnRoad.put(event.id,mapResAgentLoc);
+				resAgentArriveTime.put(event.id,mapResAgentArrivalTime);
 				PriorityQueue<Map.Entry<Long, Long>> pq = new PriorityQueue<>((a,b) -> a.getValue()>b.getValue()?1:-1);
 				pq.addAll(currentArrivalTime.entrySet());
 				//currentArrivalTime.clear();
@@ -251,7 +262,7 @@ public class Simulator {
 				//resPrefList.put(event.id,currentArrivalTime);
 				resPrefList.put(event.id,aList);
 
-			}
+			//}
 
 		}
 
@@ -419,6 +430,21 @@ public class Simulator {
 
 			}
 		}
+
+		//Call assignedTo and setEvent methods for assigned agents
+		for(AgentEvent ag:emptyAgents)
+		{
+			if(agentMatches.get(ag.id)!=-1L)
+			{
+				Long assignedResId=agentMatches.get(ag.id);
+				ResourceEvent ev=mapResIdToResEvents.get(assignedResId);
+
+				//HashMap<Long,LocationOnRoad>temp=resAgentLocationOnRoad.get()
+				//ag.assignedTo();
+				//ag.setEvent();
+			}
+		}
+
 		System.out.println("The matching is as follows for resources:");
 		int numberOfResMatched=0;
 		for(Long r_id : resMatches.keySet() ) {
@@ -426,6 +452,7 @@ public class Simulator {
 			if(resMatches.get(r_id)!=-1L)
 			{
 				numberOfResMatched++;
+
 			}
 			System.out.print(r_id+","+resMatches.get(r_id));
 
@@ -443,6 +470,7 @@ public class Simulator {
 		}
 
 
+
 	}
 
 
@@ -456,8 +484,9 @@ public class Simulator {
 	public void run() throws Exception {
 		System.out.println("Running the simulation...");
 
-		initialPoolTime=initialPoolTime+ TimeUnit.MINUTES.toSeconds(2);
-		endPooltime=initialPoolTime+TimeUnit.MINUTES.toSeconds(2);
+		initialPoolTime=initialPoolTime+ TimeUnit.SECONDS.toSeconds(30);
+		endPooltime=initialPoolTime+TimeUnit.SECONDS.toSeconds(30);
+		System.out.println("Difference:"+(endPooltime-initialPoolTime));
 		ScoreInfo score = new ScoreInfo();
 		if (map == null) {
 			System.out.println("map is null at beginning of run");
@@ -476,13 +505,15 @@ public class Simulator {
 					stableMarriage();
 					AgentEvent.agentList.clear();
 					ResourceEvent.resList.clear();
+					initialPoolTime=initialPoolTime+ TimeUnit.SECONDS.toSeconds(30);
+					endPooltime=initialPoolTime+TimeUnit.SECONDS.toSeconds(30);
 				}
 				Event e = toTrigger.trigger();
 				//System.out.println("Event"+toTrigger.getClass());
 				if (e != null) {
 					events.add(e);
 				}
-
+				//initialPoolTime
 			}
 
 		} catch (Exception e) {
