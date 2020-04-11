@@ -96,16 +96,13 @@ public class MapWithData {
 	* Where resources in the first 2 mins are retrieved
 	 */
 
-	public long createMapWithData(Simulator simulator,ArrayList<Resource> resourcesParsed ) {
-		/*long window=2;
-		window*=60;
+	public long createMapWithData(Simulator simulator) {
+
 		CSVNewYorkParser parser = new CSVNewYorkParser(resourceFile, zoneId);
-		ArrayList<Resource> resourcesParsed = parser.parse();*/
-		//long startWindowTime=resourcesParsed.get(0).getTime();
+		ArrayList<Resource> resourcesParsed = parser.parse();
 		try {
 			for (Resource resource : resourcesParsed) {
-					//System.out.println("$$$$#### Resource Time:"+resource.getTime());
-					// map matching
+
 					LocationOnRoad pickupMatch = mapMatch(resource.getPickupLon(), resource.getPickupLat());
 					LocationOnRoad dropoffMatch = mapMatch(resource.getDropoffLon(), resource.getDropoffLat());
 

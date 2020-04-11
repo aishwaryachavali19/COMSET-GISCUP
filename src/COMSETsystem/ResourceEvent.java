@@ -2,7 +2,7 @@ package COMSETsystem;
 
 import java.util.logging.Level;
 import java.util.logging.Logger;
-
+import java.util.*;
 /**
  *
  * @author TijanaKlimovic
@@ -37,7 +37,7 @@ public class ResourceEvent extends Event {
 
 	// The shortest travel time from pickupLoc to dropoffLoc
 	public long tripTime;
-
+	public static PriorityQueue<ResourceEvent> resList = new PriorityQueue<>();
 	/**
 	 * Constructor for class ResourceEvent.
 	 *
@@ -80,7 +80,7 @@ public class ResourceEvent extends Event {
 		}
 		if (eventCause == BECOME_AVAILABLE) {
 			Event e = becomeAvailableHandler();
-			return e;
+			return null;
 		} else {
 			expireHandler();
 			return null;
@@ -99,9 +99,9 @@ public class ResourceEvent extends Event {
 	public Event becomeAvailableHandler() {
 		//total number of resources from dataset appearing through the simulation increases
 		++simulator.totalResources;
-
+		resList.add(this);
 		// finds the agent with least travel time between itself and this resource
-		AgentEvent bestAgent = null;
+		/*AgentEvent bestAgent = null;
 		long earliest = Long.MAX_VALUE;
 		LocationOnRoad bestAgentLocationOnRoad = null;
 		for (AgentEvent agent : simulator.emptyAgents) {
@@ -166,8 +166,10 @@ public class ResourceEvent extends Event {
 			Logger.getLogger(this.getClass().getName()).log(Level.INFO, "Next agent trigger time = " + bestAgent.time, this);
 
 			// Add the event back to the event queue.
-			return bestAgent;
-		}
+			return bestAgent;*/
+			return this;
+
+
 	}
 
 	/*
@@ -177,6 +179,7 @@ public class ResourceEvent extends Event {
 		simulator.expiredResources ++;
 		simulator.totalResourceWaitTime += simulator.ResourceMaximumLifeTime;
 		simulator.waitingResources.remove(this);
+		resList.remove(this);
 		Logger.getLogger(this.getClass().getName()).log(Level.INFO, "Expired.", this);
 
 	}

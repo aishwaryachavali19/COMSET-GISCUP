@@ -90,13 +90,8 @@ public class AgentHubsDestination extends BaseAgent {
 	@Override
 	public void assignedTo(LocationOnRoad currentLocation, long currentTime, long resourceId, LocationOnRoad resourcePikcupLocation, LocationOnRoad resourceDropoffLocation) {
 		// Clear the current route.
-		route.clear();
+		//route.clear();
 
-		Logger.getLogger(this.getClass().getName()).log(Level.INFO, "Agent " + this.id + " assigned to resource " + resourceId);
-		Logger.getLogger(this.getClass().getName()).log(Level.INFO, "currentLocation = " + currentLocation);
-		Logger.getLogger(this.getClass().getName()).log(Level.INFO, "currentTime = " + currentTime);
-		Logger.getLogger(this.getClass().getName()).log(Level.INFO, "resourcePickupLocation = " + resourcePikcupLocation);
-		Logger.getLogger(this.getClass().getName()).log(Level.INFO, "resourceDropoffLocation = " + resourceDropoffLocation);
 	}
 
 }

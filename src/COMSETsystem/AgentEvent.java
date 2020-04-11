@@ -36,6 +36,7 @@ public class AgentEvent extends Event {
 	// Constants representing two causes for which the AgentEvent can be triggered.
 	public final static int INTERSECTION_REACHED = 0;
 	public final static int DROPPING_OFF = 1;
+	public final static int INITIAL_EVENT=2;
 
 	// The location at which the event is triggered.
 	LocationOnRoad loc;
@@ -49,7 +50,7 @@ public class AgentEvent extends Event {
 	Random rnd;
 
 	public static ArrayList<Intersection> allHubs = new ArrayList<Intersection>();
-
+	public static PriorityQueue<AgentEvent> agentList = new PriorityQueue<>();
 	/*
 	 * The time at which the agent started to search for a resource. This is also the
 	 * time at which the agent drops off a resource.
@@ -66,7 +67,7 @@ public class AgentEvent extends Event {
 		super(startedSearch, simulator);
 		this.loc = loc;
 		this.startSearchTime = startedSearch;
-		this.eventCause = DROPPING_OFF; // The introduction of an agent is considered a drop-off event.
+		this.eventCause = INITIAL_EVENT;// The introduction of an agent
 		simulator.emptyAgents.add(this); 
 		try {
 			Constructor<? extends BaseAgent> cons = simulator.agentClass.getConstructor(Long.TYPE, CityMap.class);
@@ -92,14 +93,21 @@ public class AgentEvent extends Event {
 	Event trigger() throws Exception {
 		Logger.getLogger(this.getClass().getName()).log(Level.INFO, "******** AgentEvent id = " + id+ " triggered at time " + time, this);
 		Logger.getLogger(this.getClass().getName()).log(Level.INFO, "Loc = " + loc, this);
-		Event e;
+
 		if (eventCause == DROPPING_OFF) {
-			e = dropoffHandler();
-		} else {
-			e = intersectionReachedHandler();
+			Event e= dropoffHandler();
+			return  e;
+		}
+		else if(eventCause == INITIAL_EVENT) {
+			initialEventHandler();
+			return null;
+		}else {
+			Event e = intersectionReachedHandler();
+			return e;
 		}
 		// add this event back on the event queue
-		return e;
+
+
 	}
 
 	@Override
@@ -134,6 +142,11 @@ public class AgentEvent extends Event {
 		return this;
 	}
 
+
+	public void initialEventHandler() {
+		agentList.add(this);
+
+	}
 	/*
 	 * The handler of a DROPPING_OFF event.
 	 */

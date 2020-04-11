@@ -101,7 +101,7 @@ public class Main {
             if (assignmentPeriodArg != null) {
                 assignmentPeriod = Long.parseLong(assignmentPeriodArg);
             }
-            simulator.configure(mapJSONFile, datasetFile, numberOfAgents, boundingPolygonKMLFile, resourceMaximumLifeTime, agentPlacementSeed, speedReduction,assignmentPeriod);
+            simulator.configure(mapJSONFile, datasetFile, numberOfAgents, boundingPolygonKMLFile, resourceMaximumLifeTime, agentPlacementSeed, speedReduction);
 
 		//	simulator.stableMarriage();
             //simulator.runOptimal();
