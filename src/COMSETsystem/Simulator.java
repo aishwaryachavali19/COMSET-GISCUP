@@ -206,6 +206,7 @@ public class Simulator {
 		long min= Long.MAX_VALUE;
 		for(Event event : events)
 		{
+			System.out.println("before isResource");
 			if(event.isResource())
 			{
 				resMatches.put(event.id,-1L);
@@ -213,6 +214,7 @@ public class Simulator {
 				indexTrackForRes.put(event.id,0);
 				LinkedHashMap<Long,Long> currentArrivalTime=new LinkedHashMap<>();
 				for (AgentEvent agent : emptyAgents) {
+
 
 					// Calculate the travel time from the agent's current location to resource.
 					// Assumption: agent.time is the arrival time at the end intersection of agent.loc.road.
@@ -229,7 +231,7 @@ public class Simulator {
 					if(arriveTime<((ResourceEvent) event).expirationTime)
 					{
 						currentArrivalTime.put(agent.id,arriveTime);
-						//System.out.println("Added to customer pref list.");
+						System.out.println("Added to customer pref list.");
 					}
 
 
@@ -367,7 +369,7 @@ public class Simulator {
 		int freeRes=resMatches.size();
 		while(freeRes >0)
 		{
-			//System.out.println("freeRes:"+freeRes);
+			System.out.println("freeRes:"+freeRes);
 
 			for(Long resId: resMatches.keySet()) //For all the resources
 			{
@@ -465,7 +467,7 @@ public class Simulator {
 			while (events.peek().time <= simulationEndTime) {
 				Event toTrigger = events.poll();
 				pb.stepTo((long)(((float)(toTrigger.time - beginTime)) / (simulationEndTime - beginTime) * 100.0));
-				Event e = toTrigger.trigger();
+
 				if(toTrigger.getClass()==ResourceEvent.class && toTrigger.time>=initialPoolTime && toTrigger.time<endPooltime) {
 					if(ResourceEvent.resList.isEmpty()) {
 						continue;
@@ -475,6 +477,8 @@ public class Simulator {
 					AgentEvent.agentList.clear();
 					ResourceEvent.resList.clear();
 				}
+				Event e = toTrigger.trigger();
+				//System.out.println("Event"+toTrigger.getClass());
 				if (e != null) {
 					events.add(e);
 				}

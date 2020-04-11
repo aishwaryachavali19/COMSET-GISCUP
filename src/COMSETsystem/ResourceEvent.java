@@ -39,7 +39,7 @@ public class ResourceEvent extends Event {
 	// The shortest travel time from pickupLoc to dropoffLoc
 	public long tripTime;
 
-	public static PriorityQueue<ResourceEvent> resList;
+	public static PriorityQueue<ResourceEvent> resList = new PriorityQueue<>();
 
 	/**
 	 * Constructor for class ResourceEvent.
@@ -83,7 +83,7 @@ public class ResourceEvent extends Event {
 		}
 		if (eventCause == BECOME_AVAILABLE) {
 			Event e = becomeAvailableHandler();
-			return e;
+			return null;
 		} else {
 			expireHandler();
 			return null;
@@ -101,6 +101,7 @@ public class ResourceEvent extends Event {
 	 */
 	public Event becomeAvailableHandler() {
 		//total number of resources from dataset appearing through the simulation increases
+		System.out.println("inside becomeAvailableHandler");
 		++simulator.totalResources;
 
 		resList.add(this);

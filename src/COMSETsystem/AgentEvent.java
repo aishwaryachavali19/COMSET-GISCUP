@@ -52,7 +52,7 @@ public class AgentEvent extends Event {
 	public static ArrayList<Intersection> allHubs = new ArrayList<Intersection>();
 
 
-	public static PriorityQueue<AgentEvent> agentList;
+	public static PriorityQueue<AgentEvent> agentList=new PriorityQueue<>();
 
 	/*
 	 * The time at which the agent started to search for a resource. This is also the
@@ -96,19 +96,22 @@ public class AgentEvent extends Event {
 	Event trigger() throws Exception {
 		Logger.getLogger(this.getClass().getName()).log(Level.INFO, "******** AgentEvent id = " + id+ " triggered at time " + time, this);
 		Logger.getLogger(this.getClass().getName()).log(Level.INFO, "Loc = " + loc, this);
-		Event e;
+		//Event e;
 		if (eventCause == DROPPING_OFF) {
-			e = dropoffHandler();
+			Event e = dropoffHandler();
+			return e;
 		}
 		if(eventCause == INITIAL_EVENT) {
-			e=initialEventHandler();
+			initialEventHandler();
+			return null;
 		}
 		else {
-			e = intersectionReachedHandler();
+			Event e = intersectionReachedHandler();
+			return e;
 		}
 
 		// add this event back on the event queue
-		return e;
+		//return e;
 	}
 
 	@Override
@@ -143,9 +146,9 @@ public class AgentEvent extends Event {
 		return this;
 	}
 
-	Event initialEventHandler() {
+	void initialEventHandler() {
 		agentList.add(this);
-		return this;
+		//return this;
 	}
 	/*
 	 * The handler of a DROPPING_OFF event.
