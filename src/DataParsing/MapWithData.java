@@ -99,11 +99,11 @@ public class MapWithData {
 	* Where resources in the first 2 mins are retrieved
 	 */
 
-	public long createMapWithData(Simulator simulator,ArrayList<Resource> resourcesParsed ) {
-		/*long window=2;
-		window*=60;
+	public long createMapWithData(Simulator simulator ) {
+		//long window=2;
+		//window*=60;
 		CSVNewYorkParser parser = new CSVNewYorkParser(resourceFile, zoneId);
-		ArrayList<Resource> resourcesParsed = parser.parse();*/
+		ArrayList<Resource> resourcesParsed = parser.parse();
 		//long startWindowTime=resourcesParsed.get(0).getTime();
 		try {
 			for (Resource resource : resourcesParsed) {

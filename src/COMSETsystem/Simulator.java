@@ -5,6 +5,7 @@ import MapCreation.*;
 import java.io.File;
 import java.text.NumberFormat;
 import java.util.*;
+import java.util.concurrent.TimeUnit;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.text.*;
@@ -85,6 +86,9 @@ public class Simulator {
 
 	// The number of expired resources.
 	protected long expiredResources = 0;
+
+	protected long initialPoolTime;
+	protected long endPooltime=0;
 
 	// The number of resources that have been introduced to the system.
 	protected long totalResources = 0;
@@ -170,12 +174,16 @@ public class Simulator {
 		System.out.println("Loading and map-matching resources...");
 		long latestResourceTime = mapWD.createMapWithData(this);
 
+		//First pool
+		initialPoolTime=mapWD.earliestResourceTime;
+
 		// The simulation end time is the expiration time of the last resource.
 		this.simulationEndTime = latestResourceTime;
 
 		// Deploy agents at random locations of the map.
 		System.out.println("Randomly placing " + this.totalAgents + " agents on the map...");
 		agents = mapWD.placeAgentsRandomly(this);
+		System.out.println("get events");
 
 		// Initialize the event queue.
 		events = mapWD.getEvents();
@@ -446,6 +454,8 @@ public class Simulator {
 	public void run() throws Exception {
 		System.out.println("Running the simulation...");
 
+		initialPoolTime=initialPoolTime+ TimeUnit.MINUTES.toSeconds(2);
+		endPooltime=initialPoolTime+TimeUnit.MINUTES.toSeconds(2);
 		ScoreInfo score = new ScoreInfo();
 		if (map == null) {
 			System.out.println("map is null at beginning of run");
@@ -456,10 +466,21 @@ public class Simulator {
 				Event toTrigger = events.poll();
 				pb.stepTo((long)(((float)(toTrigger.time - beginTime)) / (simulationEndTime - beginTime) * 100.0));
 				Event e = toTrigger.trigger();
+				if(toTrigger.getClass()==ResourceEvent.class && toTrigger.time>=initialPoolTime && toTrigger.time<endPooltime) {
+					if(ResourceEvent.resList.isEmpty()) {
+						continue;
+					}
+
+					stableMarriage();
+					AgentEvent.agentList.clear();
+					ResourceEvent.resList.clear();
+				}
 				if (e != null) {
 					events.add(e);
 				}
+
 			}
+
 		} catch (Exception e) {
 			e.printStackTrace();
 		}
