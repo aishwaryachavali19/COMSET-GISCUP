@@ -205,7 +205,6 @@ public class Simulator {
 
 		HashMap<ResourceEvent, Map<AgentEvent, Long>> ResAgentArriveTime= new HashMap<>();//Store resource to agent locationOnRoad
 		Map<AgentEvent,Long> agentArriveTime = new HashMap<>();
-
 		int id=0;
 		for(ResourceEvent event:ResourceEvent.resList){
 				//events.remove(event);
@@ -259,9 +258,6 @@ public class Simulator {
 				IdAgent.put(id,agentInResList);
 				IdResource.put(id, ((ResourceEvent) event));
 				id++;
-
-
-
 		}
 		if(costMatrix.size()!=0) {
 			System.out.println("##Hungarian - Agent in resource list" + agentInResList.size());
@@ -348,7 +344,6 @@ public class Simulator {
 					numberOfPools++;
 					createCostMatrix();
 					AgentEvent.agentList.clear();
-					ResourceEvent.resList.clear();
 					initialPoolTime=initialPoolTime+ TimeUnit.SECONDS.toSeconds(30);
 					endPooltime=initialPoolTime+ TimeUnit.SECONDS.toSeconds(30);
 				}
