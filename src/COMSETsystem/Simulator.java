@@ -93,6 +93,8 @@ public class Simulator {
 	// The number of assignments that have been made.
 	protected long totalAssignments = 0;
 
+	protected double totalBenefit = 0;
+
 	// A list of all the agents in the system. Not really used in COMSET, but maintained for
 	// a user's debugging purposes.
 	ArrayList<BaseAgent> agents;
@@ -230,6 +232,7 @@ public class Simulator {
 					long distance=map.travelDistanceBetween(agentLocationOnRoad,((ResourceEvent) event).pickupLoc);
 					long tripDistance=map.travelDistanceBetween(((ResourceEvent) event).pickupLoc,((ResourceEvent) event).dropoffLoc);
 					double benefit= (double)tripDistance/(tripDistance + distance);
+					totalBenefit += benefit;
 
 					if(arriveTime <= ((ResourceEvent) event).expirationTime)
 					{
@@ -460,14 +463,15 @@ public class Simulator {
 				sb.append("Total simulation time: " + totalTime + " seconds \n");
 				sb.append("average agent search time: " + Math.floorDiv(totalAgentSearchTime + totalRemainTime, (totalAssignments + emptyAgents.size())) + " seconds \n");
 				sb.append("average resource wait time: " + Math.floorDiv(totalResourceWaitTime, totalResources) + " seconds \n");
-				sb.append("resource expiration percentage: " + Math.floorDiv(expiredResources * 100, totalResources) + "%\n");
+				sb.append("resource expiration percentage: " + ((float)(expiredResources * 100) /totalResources) + " %\n");
 				sb.append("\n");
 				System.out.println("Expired resources" + expiredResources);
 //				sb.append("average agent cruise time: " + Math.floorDiv(totalAgentCruiseTime, totalAssignments) + " seconds \n");
 //				sb.append("average agent approach time: " + Math.floorDiv(totalAgentApproachTime, totalAssignments) + " seconds \n");
 //				sb.append("average resource trip time: " + Math.floorDiv(totalResourceTripTime, totalAssignments) + " seconds \n");
 				sb.append("total number of assignments: " + totalAssignments + "\n");
-				sb.append("total resouces: " + totalResources);
+				sb.append("total resouces: " + totalResources + "\n");
+				sb.append("Total Benefit: " + totalBenefit + "\n");
 			} else {
 				sb.append("No resources.\n");
 			}
