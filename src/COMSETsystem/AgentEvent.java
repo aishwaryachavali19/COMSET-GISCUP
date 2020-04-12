@@ -36,7 +36,6 @@ public class AgentEvent extends Event {
 	// Constants representing two causes for which the AgentEvent can be triggered.
 	public final static int INTERSECTION_REACHED = 0;
 	public final static int DROPPING_OFF = 1;
-	public final static int INITIAL_EVENT=2;
 
 	// The location at which the event is triggered.
 	LocationOnRoad loc;
@@ -47,9 +46,6 @@ public class AgentEvent extends Event {
 	// The cause of the AgentEvent to be triggered, either INTERSECTION_REACHED or DROPPING_OFF.
 	public int eventCause;
 
-	Random rnd;
-
-	public static ArrayList<Intersection> allHubs = new ArrayList<Intersection>();
 	public static PriorityQueue<AgentEvent> agentList = new PriorityQueue<>();
 	/*
 	 * The time at which the agent started to search for a resource. This is also the
@@ -67,7 +63,7 @@ public class AgentEvent extends Event {
 		super(startedSearch, simulator);
 		this.loc = loc;
 		this.startSearchTime = startedSearch;
-		this.eventCause = INITIAL_EVENT;// The introduction of an agent
+		this.eventCause = DROPPING_OFF;// The introduction of an agent
 		simulator.emptyAgents.add(this); 
 		try {
 			Constructor<? extends BaseAgent> cons = simulator.agentClass.getConstructor(Long.TYPE, CityMap.class);
@@ -93,21 +89,13 @@ public class AgentEvent extends Event {
 	Event trigger() throws Exception {
 		Logger.getLogger(this.getClass().getName()).log(Level.INFO, "******** AgentEvent id = " + id+ " triggered at time " + time, this);
 		Logger.getLogger(this.getClass().getName()).log(Level.INFO, "Loc = " + loc, this);
-
+		Event e;
 		if (eventCause == DROPPING_OFF) {
-			Event e= dropoffHandler();
-			return  e;
+			e = dropoffHandler();
+		} else {
+			e = intersectionReachedHandler();
 		}
-		else if(eventCause == INITIAL_EVENT) {
-			initialEventHandler();
-			return null;
-		}else {
-			Event e = intersectionReachedHandler();
-			return e;
-		}
-		// add this event back on the event queue
-
-
+		return e;
 	}
 
 	@Override
@@ -136,17 +124,12 @@ public class AgentEvent extends Event {
 		Road nextRoad = loc.road.to.roadTo(nextIntersection);
 		LocationOnRoad nextLocation = new LocationOnRoad(nextRoad, nextRoad.travelTime);
 		setEvent(time + nextRoad.travelTime, nextLocation, INTERSECTION_REACHED);
-		
+
 		Logger.getLogger(this.getClass().getName()).log(Level.INFO, "Move to " + nextRoad.to, this);
 		Logger.getLogger(this.getClass().getName()).log(Level.INFO, "Next trigger time = " + time, this);
 		return this;
 	}
 
-
-	public void initialEventHandler() {
-		agentList.add(this);
-
-	}
 	/*
 	 * The handler of a DROPPING_OFF event.
 	 */
@@ -154,42 +137,17 @@ public class AgentEvent extends Event {
 		startSearchTime = time;
 		Logger.getLogger(this.getClass().getName()).log(Level.INFO, "Dropoff at " + loc, this);
 		// so if the agent was not empty, make it empty for other resources
+		LocationOnRoad locAgentCopy = simulator.agentCopy(loc);
+		agent.planSearchRoute(locAgentCopy, time);
+
 		if (!simulator.emptyAgents.contains(this)) {
 			// "Label" the agent as empty.
 			simulator.emptyAgents.add(this);
 		}
-
-		rnd = new Random(10);
-		if (allHubs.size() == 0) {
-			for(int i=0; i<10; i++) {
-				int hubIndex = rnd.nextInt(simulator.map.intersections().size());
-				Intersection[] intersectionArray = simulator.map.intersections().values().toArray(new Intersection[simulator.map.intersections().size()]);
-				Intersection hub = intersectionArray[hubIndex];
-				allHubs.add(hub);
-			}
-		}
-
-		LocationOnRoad currentLocation = simulator.agentCopy(loc);
-		Intersection sourceIntersection = currentLocation.road.to;
-		Intersection nearest_Hub = null;
-		Long minTime = Long.MAX_VALUE;
-		for (Intersection hub : allHubs) {
-			Long travelTime = simulator.map.travelTimeBetween(sourceIntersection, hub);
-			if (travelTime < minTime) {
-				minTime = travelTime;
-				nearest_Hub = hub;
-			}
-		}
-
-		if (nearest_Hub != sourceIntersection) {
-			LinkedList<Intersection> shortestPath;
-			shortestPath = simulator.map.shortestTravelTimePath(sourceIntersection, nearest_Hub);
-			agent.planSearchRoute(shortestPath);
-
-		}
-		else {
-			agent.clearRoute();
-		}
+		// move to the end intersection of the current road
+		long nextEventTime = time + loc.road.travelTime - loc.travelTimeFromStartIntersection;
+		LocationOnRoad nextLoc = new LocationOnRoad(loc.road, loc.road.travelTime);
+		setEvent(nextEventTime, nextLoc, INTERSECTION_REACHED);
 		return this;
 	}
 

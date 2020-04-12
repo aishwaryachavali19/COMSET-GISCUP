@@ -289,13 +289,24 @@ public class Simulator {
 					// Inform the assignment to the agent.
 					LocationOnRoad agentLocation = ResAgentLocationOnRoad.get(resEvent).get(bestAgent);
 					bestAgent.assignedTo(agentLocation, resEvent.time, resEvent.id, resEvent.pickupLoc, resEvent.dropoffLoc);
-
 					// "Label" the agent as occupied.
 					assignedAgents.add(bestAgent);
 					emptyAgents.remove(bestAgent);
 					events.remove(bestAgent);
 					long agentArrival = ResAgentArriveTime.get(resEvent).get(bestAgent);
 					bestAgent.setEvent(agentArrival + resEvent.tripTime, resEvent.dropoffLoc, AgentEvent.DROPPING_OFF);
+					events.add(bestAgent);
+
+					long cruiseTime = resEvent.time - bestAgent.startSearchTime;
+					long approachTime = agentArrival - resEvent.time;
+					long searchTime = cruiseTime + approachTime;
+					long waitTime = agentArrival - resEvent.availableTime;
+
+					totalAgentCruiseTime += cruiseTime;
+					totalAgentApproachTime += approachTime;
+					totalAgentSearchTime += searchTime;
+					totalResourceWaitTime += waitTime;
+					totalAssignments++;
 				}
 			}
 		}
@@ -313,16 +324,17 @@ public class Simulator {
 		Event tocheck=null;
 		int resources=0;
 		System.out.println("Running the simulation...");
-		initialPoolTime=initialPoolTime+ TimeUnit.SECONDS.toSeconds(30);
-		endPooltime=initialPoolTime+ TimeUnit.SECONDS.toSeconds(30);
+		initialPoolTime=initialPoolTime+ TimeUnit.SECONDS.toSeconds(5);
+		endPooltime=initialPoolTime+ TimeUnit.SECONDS.toSeconds(5);
 		ScoreInfo score = new ScoreInfo();
 		if (map == null) {
 			System.out.println("map is null at beginning of run");
 		}
 		try (ProgressBar pb = new ProgressBar("Progress:", 100, ProgressBarStyle.ASCII)) {
 			long beginTime = events.peek().time;
-			tocheck = events.peek();
 			while (events.peek().time <= simulationEndTime) {
+				if (tocheck.getClass() == ResourceEvent.class) {
+				}
 				Event toTrigger = events.poll();
 				if(toTrigger.getClass()==ResourceEvent.class) resources++;
 				pb.stepTo((long)(((float)(toTrigger.time - beginTime)) / (simulationEndTime - beginTime) * 100.0));
@@ -333,8 +345,8 @@ public class Simulator {
 					createCostMatrix();
 					AgentEvent.agentList.clear();
 					ResourceEvent.resList.clear();
-					initialPoolTime=initialPoolTime+ TimeUnit.SECONDS.toSeconds(30);
-					endPooltime=initialPoolTime+ TimeUnit.SECONDS.toSeconds(30);
+					initialPoolTime=initialPoolTime+ TimeUnit.SECONDS.toSeconds(5);
+					endPooltime=initialPoolTime+ TimeUnit.SECONDS.toSeconds(5);
 				}
 				Event e = toTrigger.trigger();
 				if (e != null) {
@@ -445,15 +457,17 @@ public class Simulator {
 				for (AgentEvent ae: emptyAgents) {
 					totalRemainTime += (simulationEndTime - ae.startSearchTime);
 				}
-
+				sb.append("Total simulation time: " + totalTime + " seconds \n");
 				sb.append("average agent search time: " + Math.floorDiv(totalAgentSearchTime + totalRemainTime, (totalAssignments + emptyAgents.size())) + " seconds \n");
 				sb.append("average resource wait time: " + Math.floorDiv(totalResourceWaitTime, totalResources) + " seconds \n");
 				sb.append("resource expiration percentage: " + Math.floorDiv(expiredResources * 100, totalResources) + "%\n");
 				sb.append("\n");
-				sb.append("average agent cruise time: " + Math.floorDiv(totalAgentCruiseTime, totalAssignments) + " seconds \n");
-				sb.append("average agent approach time: " + Math.floorDiv(totalAgentApproachTime, totalAssignments) + " seconds \n");
-				sb.append("average resource trip time: " + Math.floorDiv(totalResourceTripTime, totalAssignments) + " seconds \n");
+				System.out.println("Expired resources" + expiredResources);
+//				sb.append("average agent cruise time: " + Math.floorDiv(totalAgentCruiseTime, totalAssignments) + " seconds \n");
+//				sb.append("average agent approach time: " + Math.floorDiv(totalAgentApproachTime, totalAssignments) + " seconds \n");
+//				sb.append("average resource trip time: " + Math.floorDiv(totalResourceTripTime, totalAssignments) + " seconds \n");
 				sb.append("total number of assignments: " + totalAssignments + "\n");
+				sb.append("total resouces: " + totalResources);
 			} else {
 				sb.append("No resources.\n");
 			}
