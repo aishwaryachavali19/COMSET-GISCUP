@@ -181,6 +181,10 @@ public class ResourceEvent extends Event {
 		simulator.waitingResources.remove(this);
 		resList.remove(this);
 		Logger.getLogger(this.getClass().getName()).log(Level.INFO, "Expired.", this);
+	}
 
+	public void setExpirationEvent(long time, int eventCause) {
+		this.time = time;
+		this.eventCause = eventCause;
 	}
 }

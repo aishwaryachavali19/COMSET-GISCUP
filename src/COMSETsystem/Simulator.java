@@ -247,16 +247,17 @@ public class Simulator {
 				}
 				if (Collections.frequency(resAgent, 0.0) == resAgent.size())
 				{
-					event.time = event.time + ResourceMaximumLifeTime;
-					event.eventCause = event.EXPIRED;
-					waitingResources.add(event);
+					events.remove(((ResourceEvent) event));
+					event.setExpirationEvent(((ResourceEvent) event).time + ResourceMaximumLifeTime, ResourceEvent.EXPIRED);
+					waitingResources.add(((ResourceEvent) event));
+					events.add(((ResourceEvent) event));
 					continue;
 				}
-				ResAgentLocationOnRoad.put(event, AgentOnRoad);
-				ResAgentArriveTime.put(event,agentArriveTime);
+				ResAgentLocationOnRoad.put(((ResourceEvent) event), AgentOnRoad);
+				ResAgentArriveTime.put(((ResourceEvent) event),agentArriveTime);
 				costMatrix.add(resAgent);
-				IdAgent.put(id,agentInResList);//Snehal
-				IdResource.put(id, (ResourceEvent) event);//Snehal
+				IdAgent.put(id,agentInResList);
+				IdResource.put(id, ((ResourceEvent) event));
 				id++;
 
 
@@ -324,8 +325,8 @@ public class Simulator {
 		Event tocheck=null;
 		int resources=0;
 		System.out.println("Running the simulation...");
-		initialPoolTime=initialPoolTime+ TimeUnit.SECONDS.toSeconds(5);
-		endPooltime=initialPoolTime+ TimeUnit.SECONDS.toSeconds(5);
+		initialPoolTime=initialPoolTime+ TimeUnit.SECONDS.toSeconds(30);
+		endPooltime=initialPoolTime+ TimeUnit.SECONDS.toSeconds(30);
 		ScoreInfo score = new ScoreInfo();
 		if (map == null) {
 			System.out.println("map is null at beginning of run");
@@ -333,20 +334,23 @@ public class Simulator {
 		try (ProgressBar pb = new ProgressBar("Progress:", 100, ProgressBarStyle.ASCII)) {
 			long beginTime = events.peek().time;
 			while (events.peek().time <= simulationEndTime) {
-				if (tocheck.getClass() == ResourceEvent.class) {
-				}
 				Event toTrigger = events.poll();
-				if(toTrigger.getClass()==ResourceEvent.class) resources++;
+
+				if(toTrigger.getClass()==ResourceEvent.class){
+					resources++;
+				}
 				pb.stepTo((long)(((float)(toTrigger.time - beginTime)) / (simulationEndTime - beginTime) * 100.0));
 				if(toTrigger.getClass()==ResourceEvent.class && toTrigger.time>=initialPoolTime && toTrigger.time<endPooltime) {
 					if(ResourceEvent.resList.isEmpty()) {
 						continue;
 					}
+					System.out.println("\nnumber of pools: " + numberOfPools + "\n");
+					numberOfPools++;
 					createCostMatrix();
 					AgentEvent.agentList.clear();
 					ResourceEvent.resList.clear();
-					initialPoolTime=initialPoolTime+ TimeUnit.SECONDS.toSeconds(5);
-					endPooltime=initialPoolTime+ TimeUnit.SECONDS.toSeconds(5);
+					initialPoolTime=initialPoolTime+ TimeUnit.SECONDS.toSeconds(30);
+					endPooltime=initialPoolTime+ TimeUnit.SECONDS.toSeconds(30);
 				}
 				Event e = toTrigger.trigger();
 				if (e != null) {
@@ -448,6 +452,7 @@ public class Simulator {
 			System.out.println("Agent class: " + agentClass.getName());
 
 			System.out.println("\n***Statistics***");
+			System.out.println("Expired resources" + expiredResources);
 
 			if (totalResources != 0) {
 				// Collect the "search" time for the agents that are empty at the end of the simulation.
