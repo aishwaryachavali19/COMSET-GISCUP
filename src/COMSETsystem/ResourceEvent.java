@@ -102,7 +102,6 @@ public class ResourceEvent extends Event {
 		resList.add(this);
 		this.time += simulator.ResourceMaximumLifeTime;
 		this.eventCause = EXPIRED;
-
 		// finds the agent with least travel time between itself and this resource
 		/*AgentEvent bestAgent = null;
 		long earliest = Long.MAX_VALUE;
@@ -125,6 +124,7 @@ public class ResourceEvent extends Event {
 				bestAgent = agent;
 				earliest = arriveTime;
 				bestAgentLocationOnRoad = agentLocationOnRoad;
+			}
 		}
 
 		if (earliest > availableTime + simulator.ResourceMaximumLifeTime) {

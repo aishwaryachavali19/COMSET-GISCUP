@@ -7,7 +7,6 @@ import java.util.*;
 import java.util.concurrent.TimeUnit;
 
 import UserExamples.HungarianAlgorithm;
-import UserExamples.HungarianNew;
 import me.tongfei.progressbar.*;
 
 
@@ -200,10 +199,9 @@ public class Simulator {
 		List<List<Double>> costMatrix = new ArrayList<List<Double>>();//For cost matrix
 		List<Double> resAgent = new ArrayList<>(); //Resource to agent benefits
 		List<AgentEvent> agentInResList = new ArrayList<>();//List of agents for mapping
-
 		HashMap<ResourceEvent, Map<AgentEvent, LocationOnRoad>> ResAgentLocationOnRoad= new HashMap<>();//Store resource to agent locationOnRoad
-		Map<AgentEvent,LocationOnRoad> AgentOnRoad = new HashMap<>();
 
+		Map<AgentEvent,LocationOnRoad> AgentOnRoad = new HashMap<>();
 		Map<Integer,List> IdAgent = new HashMap<>();//Id to agent list mapping
 		Map<Integer,ResourceEvent> IdResource = new HashMap<>();//Id to resource mapping
 
@@ -225,13 +223,13 @@ public class Simulator {
 					long travelTimeToEndIntersection = agent.time - ((ResourceEvent) event).time;
 					long travelTimeFromStartIntersection = agent.loc.road.travelTime - travelTimeToEndIntersection;
 					LocationOnRoad agentLocationOnRoad = new LocationOnRoad(agent.loc.road, travelTimeFromStartIntersection);
-					//Store the locationOnRoad of the agent in the map*/
-					long travelTime = map.travelTimeBetween(agentLocationOnRoad,  event.pickupLoc);
+					//Store the locationOnRoad of the agent in the map
+					long travelTime = map.travelTimeBetween(agentLocationOnRoad, ((ResourceEvent) event).pickupLoc);
 					long arriveTime = travelTime +((ResourceEvent) event).time;
 
 
 					//New distance for benefits
-					long distance=map.travelDistanceBetween(agentLocationOnRoad,event.pickupLoc);
+					long distance=map.travelDistanceBetween(agentLocationOnRoad,((ResourceEvent) event).pickupLoc);
 					long tripDistance=map.travelDistanceBetween(((ResourceEvent) event).pickupLoc,((ResourceEvent) event).dropoffLoc);
 					double benefit= (double)tripDistance/(tripDistance + distance);
 					//totalBenefit += benefit;
@@ -240,13 +238,13 @@ public class Simulator {
 					{
 						resAgent.add(benefit);
 						agentInResList.add(agent);
-						AgentOnRoad.put(agent,agent.loc);
+						AgentOnRoad.put(agent,agentLocationOnRoad);
 						//Store the arrive time for each agent
 						agentArriveTime.put(agent,arriveTime);
 					}
 					else{
 						resAgent.add(0.0);
-						agentInResList.add(agent);
+						agentInResList.add(null);
 					}
 				}
 				if (Collections.frequency(resAgent, 0.0) == resAgent.size())
@@ -265,6 +263,9 @@ public class Simulator {
 				id++;
 		}
 		if(costMatrix.size()!=0) {
+
+			//totalPools++;
+
 			System.out.println("##Hungarian - Agent in resource list" + agentInResList.size());
 			System.out.println("##Hungarian - resource agent " + resAgent.size());
 			System.out.println("##Costmatrix - " + costMatrix.size());
@@ -368,10 +369,11 @@ public class Simulator {
 	 * @throws Exception since triggering events may create an Exception
 	 */
 	public void run() throws Exception {
+		Event tocheck=null;
 		int resources=0;
 		System.out.println("Running the simulation...");
-		initialPoolTime=initialPoolTime+ TimeUnit.SECONDS.toSeconds(10);
-		endPooltime=initialPoolTime+ TimeUnit.SECONDS.toSeconds(10);
+		initialPoolTime=initialPoolTime+ TimeUnit.SECONDS.toSeconds(30);
+		endPooltime=initialPoolTime+ TimeUnit.SECONDS.toSeconds(30);
 		ScoreInfo score = new ScoreInfo();
 		if (map == null) {
 			System.out.println("map is null at beginning of run");
@@ -393,8 +395,8 @@ public class Simulator {
 					numberOfPools++;
 					createCostMatrix();
 					AgentEvent.agentList.clear();
-					initialPoolTime=initialPoolTime+ TimeUnit.SECONDS.toSeconds(10);
-					endPooltime=initialPoolTime+ TimeUnit.SECONDS.toSeconds(10);
+					initialPoolTime=initialPoolTime+ TimeUnit.SECONDS.toSeconds(30);
+					endPooltime=initialPoolTime+ TimeUnit.SECONDS.toSeconds(30);
 				}
 				Event e = toTrigger.trigger();
 				if (e != null) {

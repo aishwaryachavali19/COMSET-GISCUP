@@ -32,7 +32,7 @@ public class CSVNewYorkParser {
 
 	ZoneId zoneId;
 
-	public static int totalNoOfResources=0;
+	public static int totalNoOfResources = 0;
 
 	/**
 	 * Constructor of the CSVNewYorkParser class
