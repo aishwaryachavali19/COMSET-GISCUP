@@ -199,6 +199,8 @@ public class Simulator {
 		HashMap<Long, ArrayList<Long>> resPrefList= new HashMap<Long, ArrayList<Long>>();
 		HashMap<Long,HashMap<Long,LocationOnRoad> > resAgentLocationOnRoad= new HashMap<Long, HashMap<Long,LocationOnRoad>>();
 
+		List<AgentEvent>assignedAgents=new ArrayList<>();
+
 		HashMap<Long, Long>agentMatches=new HashMap<>();
 		HashMap<Long, Long>resMatches=new HashMap<>();
 		HashMap<Long,Integer>indexTrackForRes=new HashMap<>();
@@ -211,7 +213,6 @@ public class Simulator {
 		{
 			mapResIdToResEvents.put(event.id,event);
 
-			System.out.println("before isResource");
 			//if(event.isResource())
 			//{
 				resMatches.put(event.id,-1L);
@@ -240,7 +241,7 @@ public class Simulator {
 						currentArrivalTime.put(agent.id,arriveTime);
 						mapResAgentLoc.put(agent.id,agentLocationOnRoad);
 						mapResAgentArrivalTime.put(agent.id,arriveTime);
-						System.out.println("Added to customer pref list.");
+						//System.out.println("Added to customer pref list.");
 					}
 
 
@@ -251,7 +252,8 @@ public class Simulator {
 				pq.addAll(currentArrivalTime.entrySet());
 				//currentArrivalTime.clear();
 				ArrayList<Long> aList=new ArrayList<Long>();
-				for(int i=0;i<pq.size();i++)
+				int limit=pq.size();
+				for(int i=0;i<limit;i++)
 				{
 					if(pq.isEmpty())
 						break;
@@ -260,24 +262,34 @@ public class Simulator {
 					aList.add(e.getKey());
 				}
 				//resPrefList.put(event.id,currentArrivalTime);
-				resPrefList.put(event.id,aList);
+				if(aList.size()!=0)
+					resPrefList.put(event.id,aList);
+				else
+				{
+					resMatches.remove(event.id);
+					//The resource has no preference so expire it!
+					events.remove(event);
+					waitingResources.add(event);
+					event.setExpirationEvent(((ResourceEvent) event).time + ResourceMaximumLifeTime, ResourceEvent.EXPIRED);
+					events.add(event);
+				}
 
 			//}
 
 		}
-
+		System.out.println("Customer pref list calculated.");
 		//Calculate the preference list for agents
-
+		int temp_free=0;
 		//HashMap<Long,HashMap<Long,Double> > agentPrefList= new HashMap<Long, HashMap<Long,Double>>();
 		HashMap<Long, ArrayList<Long>> agentPrefList= new HashMap<Long, ArrayList<Long>>();
 		for(AgentEvent agent: emptyAgents)
 		{
 			agentMatches.put(agent.id,-1L);
 			HashMap<Long,Double> currentBenefit=new HashMap<>();
-			for(Event event : events)
+			for(ResourceEvent event : ResourceEvent.resList)
 			{
-				if(event.isResource())
-				{
+				//if(event.isResource())
+				//{
 
 					long travelTimeToEndIntersection = agent.time - ((ResourceEvent) event).time;
 					long travelTimeFromStartIntersection = agent.loc.road.travelTime - travelTimeToEndIntersection;
@@ -294,13 +306,14 @@ public class Simulator {
 						//System.out.println("Added to resource pref list.");
 					}
 
-				}
+				//}
 			}
 			PriorityQueue<Map.Entry<Long, Double>> pq2 = new PriorityQueue<>((a,b) -> a.getValue()>b.getValue()?-1:1);
 			pq2.addAll(currentBenefit.entrySet());
 			//currentBenefit.clear();
 			ArrayList<Long> aList2=new ArrayList<Long>();
-			for(int i=0;i<pq2.size();i++)
+			int limit=pq2.size();
+			for(int i=0;i<limit;i++)
 			{
 				if(pq2.isEmpty())
 					break;
@@ -309,10 +322,19 @@ public class Simulator {
 				aList2.add(e.getKey());
 				//System.out.print(" "+"("+e.getKey()+","+e.getValue()+")");
 			}
+
 			//agentPrefList.put(agent.id,currentBenefit);
-			agentPrefList.put(agent.id,aList2);
+			if(aList2.size()!=0)
+				agentPrefList.put(agent.id,aList2);
+			else
+			{
+				temp_free++;
+				agentMatches.remove(agent.id);
+			}
 
 		}
+		System.out.println("Agents with no pref lists:"+temp_free);
+
 		/*
 		//To print agent preference list along with the benefit
 		System.out.println("Agent pref list:");
@@ -325,12 +347,13 @@ public class Simulator {
 		}
 		*/
 		//Agent preference list with only resource IDs
-		System.out.println("Agent pref list:");
+		//System.out.println("Agent pref list:");
 
 		/*for(Long key: agentPrefList.keySet()){
 			//ArrayList<Long> innerList = agentPrefList.get(key);
 			System.out.println("Keys:"+key);
 		}*/
+		/*
 		//agent IDs for pref list
 		int j=1;
 		ArrayList<Long> agentKeys = new ArrayList<>();
@@ -352,6 +375,7 @@ public class Simulator {
 					System.out.println();
 				}
 		}
+		 */
 		/*
 		//To print resource preference list along with waiting time. Need to change code a little to get the required o/p
 		System.out.println("\n\nResource pref list:");
@@ -362,7 +386,7 @@ public class Simulator {
 			}
 			System.out.println();
 		}
-		*/
+
 
 		//Resource preference list with only agent IDs
 		System.out.println("\n\nResource pref list:");
@@ -373,79 +397,152 @@ public class Simulator {
 			}
 			System.out.println();
 		}
+		*/
+		System.out.println("Agent pref list calculated. Running stable marriage.");
 
 		//Stable Matching algorithm
-
-
 		int freeRes=resMatches.size();
 		while(freeRes >0)
 		{
-			System.out.println("freeRes:"+freeRes);
+			//System.out.println("freeRes:"+freeRes);
 
 			for(Long resId: resMatches.keySet()) //For all the resources
 			{
 				int maxSize=resPrefList.get(resId).size();
-				if((resMatches.get(resId)==-1L) && (indexTrackForRes.get(resId)!=maxSize)) //The resource is free and has some agent left to propose
+				if(maxSize==0) //The resource has no preference list and hence should be expired.
 				{
-					ArrayList<Long>PrefList=resPrefList.get(resId);
-					int i=indexTrackForRes.get(resId);
-					while(i<PrefList.size())
+					System.out.println("No pref list!");
+					freeRes--;
+					continue;
+				}
+				else
+				{
+					if((resMatches.get(resId)==-1L) && (indexTrackForRes.get(resId)!=maxSize)) //The resource is free and has some agent left to propose
 					{
-						Long agentId=PrefList.get(i);
-						if(agentMatches.get(agentId)==-1L) //The agent is free. Then match the resource with that agent.
+						ArrayList<Long>PrefList=resPrefList.get(resId);
+						int i=indexTrackForRes.get(resId);
+						while(i<PrefList.size())
 						{
-							resMatches.put(resId,agentId);
-
-							agentMatches.put(agentId,resId);
-							indexTrackForRes.put(resId,(i+1));
-							freeRes--;
-							break;
-
-						}
-						else							//Agent is already matched to another resource. Check if the current res is preferred
-						{
-							ArrayList<Long>agentPref=agentPrefList.get(agentId);
-							Long currentMatchedRes=agentMatches.get(agentId);
-							int indexCurrentMatch=agentPref.indexOf(currentMatchedRes);
-							int index=agentPref.indexOf(resId);
-							if((index<indexCurrentMatch && index!=-1) || (indexCurrentMatch==-1 && index!=indexCurrentMatch))
+							Long agentId=PrefList.get(i);
+							if(agentMatches.get(agentId)==-1L) //The agent is free. Then match the resource with that agent.
 							{
 								resMatches.put(resId,agentId);
-								resMatches.put(currentMatchedRes,-1L); //Mark the previous resource as free
-								//waitingResources.add();
-								indexTrackForRes.put(resId,i+1);
-								agentMatches.put(agentId,resId);
-								break;
-							}
-						}
-						i++;
-						if(i==maxSize)   //If all the agents on the preference list are exhausted
-						{
-							indexTrackForRes.put(resId,maxSize);
-							freeRes--;
-						}
 
+								agentMatches.put(agentId,resId);
+								if(i+1==maxSize)
+									indexTrackForRes.put(resId,(i));
+								else
+									indexTrackForRes.put(resId,(i+1));
+
+								freeRes--;
+								break;
+
+							}
+							else							//Agent is already matched to another resource. Check if the current res is preferred
+							{
+								ArrayList<Long>agentPref=agentPrefList.get(agentId);
+								Long currentMatchedRes=agentMatches.get(agentId);
+								int indexCurrentMatch=agentPref.indexOf(currentMatchedRes);
+								int index=agentPref.indexOf(resId);
+								if((index<indexCurrentMatch && index!=-1) || (indexCurrentMatch==-1 && index!=indexCurrentMatch))
+								{
+									resMatches.put(resId,agentId);
+									resMatches.put(currentMatchedRes,-1L); //Mark the previous resource as free
+									/*
+									if(indexTrackForRes.get(indexCurrentMatch)==resPrefList.get(indexCurrentMatch).size())
+									{
+										freeRes--;
+									}
+									 */
+									if(i+1==maxSize)
+										indexTrackForRes.put(resId,(i));
+									else
+										indexTrackForRes.put(resId,(i+1));
+									agentMatches.put(agentId,resId);
+									break;
+								}
+							}
+							i++;
+							if(i==maxSize)   //If all the agents on the preference list are exhausted
+							{
+								indexTrackForRes.put(resId,maxSize);
+								freeRes--;
+							}
+
+						}
 					}
 				}
+
 
 			}
 		}
 
-		//Call assignedTo and setEvent methods for assigned agents
+		//Remove the assigned resources from resList
+		for(Long id:resMatches.keySet())
+		{
+			if(resMatches.get(id)!=-1L)
+			{
+				ResourceEvent event=mapResIdToResEvents.get(id);
+				ResourceEvent.resList.remove(event);
+			}
+		}
+		//Handle all expired resources
+		for(ResourceEvent rEvent:ResourceEvent.resList)
+		{
+
+			ResourceEvent ev=mapResIdToResEvents.get(rEvent.id);
+			events.remove(ev);
+			waitingResources.add(ev);
+			ev.setExpirationEvent(((ResourceEvent) ev).time + ResourceMaximumLifeTime, ResourceEvent.EXPIRED);
+			events.add(ev);
+
+		}
+		//Call assignedTo and setEvent methods for assigned agents. Remove assigned agents from empty agents.
 		for(AgentEvent ag:emptyAgents)
 		{
-			if(agentMatches.get(ag.id)!=-1L)
+			if(agentMatches.containsKey(ag.id) && agentMatches.get(ag.id)!=-1L)
 			{
 				Long assignedResId=agentMatches.get(ag.id);
 				ResourceEvent ev=mapResIdToResEvents.get(assignedResId);
 
-				//HashMap<Long,LocationOnRoad>temp=resAgentLocationOnRoad.get()
-				//ag.assignedTo();
-				//ag.setEvent();
+				//Remove the assigned resource from the waiting list and the waiting resources
+				ResourceEvent.resList.remove(ev);
+				waitingResources.remove(ev);
+				events.remove(ag);
+
+				//Inform the agent that it has been assigned
+				HashMap<Long,LocationOnRoad>temp=resAgentLocationOnRoad.get(assignedResId);
+				LocationOnRoad bestAgentLocationOnRoad=temp.get(ag.id);
+				ag.assignedTo(bestAgentLocationOnRoad, ev.time, ev.id, ev.pickupLoc, ev.dropoffLoc);
+
+				//Set the agent event.
+				HashMap<Long,Long>temp2=resAgentArriveTime.get(assignedResId);
+				long earliest=temp2.get(ag.id);
+				ag.setEvent(earliest + ev.tripTime, ev.dropoffLoc, AgentEvent.DROPPING_OFF);
+				events.add(ag);
+				assignedAgents.add(ag);
+
+
+				long cruiseTime = ev.time - ag.startSearchTime;
+				long approachTime = earliest - ev.time;
+				long searchTime = cruiseTime + approachTime;
+				long waitTime = earliest - ev.availableTime;
+
+				totalAgentCruiseTime += cruiseTime;
+				totalAgentApproachTime += approachTime;
+				totalAgentSearchTime += searchTime;
+				totalResourceWaitTime += waitTime;
+				totalAssignments++;
 			}
+
+
 		}
 
-		System.out.println("The matching is as follows for resources:");
+
+		//Remove all the assigned agents from empty agents
+		emptyAgents.removeAll(assignedAgents);
+
+		//System.out.println("The matching is as follows for resources:");
 		int numberOfResMatched=0;
 		for(Long r_id : resMatches.keySet() ) {
 
@@ -454,12 +551,14 @@ public class Simulator {
 				numberOfResMatched++;
 
 			}
-			System.out.print(r_id+","+resMatches.get(r_id));
+			//System.out.print(r_id+","+resMatches.get(r_id));
 
-			System.out.println();
+			//System.out.println();
 		}
-		System.out.println("The number of resources matched:"+numberOfResMatched+" percentage:"+(numberOfResMatched/resPrefList.size()));
 
+		System.out.println("The number of resources matched:"+numberOfResMatched);
+
+		/*
 		System.out.println("The matching is as follows for agents:");
 		for(Long r_id : agentMatches.keySet() ) {
 
@@ -468,7 +567,7 @@ public class Simulator {
 
 			System.out.println();
 		}
-
+		*/
 
 
 	}
@@ -483,7 +582,8 @@ public class Simulator {
 	 */
 	public void run() throws Exception {
 		System.out.println("Running the simulation...");
-
+		int pool=0;
+		int fresh=0;
 		initialPoolTime=initialPoolTime+ TimeUnit.SECONDS.toSeconds(30);
 		endPooltime=initialPoolTime+TimeUnit.SECONDS.toSeconds(30);
 		System.out.println("Difference:"+(endPooltime-initialPoolTime));
@@ -491,23 +591,31 @@ public class Simulator {
 		if (map == null) {
 			System.out.println("map is null at beginning of run");
 		}
-		try (ProgressBar pb = new ProgressBar("Progress:", 100, ProgressBarStyle.ASCII)) {
+		try //(//ProgressBar pb = new ProgressBar("Progress:", 100, ProgressBarStyle.ASCII) )
+		{
 			long beginTime = events.peek().time;
 			while (events.peek().time <= simulationEndTime) {
 				Event toTrigger = events.poll();
-				pb.stepTo((long)(((float)(toTrigger.time - beginTime)) / (simulationEndTime - beginTime) * 100.0));
-
-				if(toTrigger.getClass()==ResourceEvent.class && toTrigger.time>=initialPoolTime && toTrigger.time<endPooltime) {
+				//pb.stepTo((long)(((float)(toTrigger.time - beginTime)) / (simulationEndTime - beginTime) * 100.0));
+				if(toTrigger.getClass()==ResourceEvent.class)
+					fresh++;
+				if((toTrigger.getClass()==ResourceEvent.class && toTrigger.time>=initialPoolTime && toTrigger.time<endPooltime) ||(totalResources==CSVNewYorkParser.totalResourcesNo)) {
 					if(ResourceEvent.resList.isEmpty()) {
+						System.out.println("resList is empty");
 						continue;
+
 					}
 
+					pool++;
+					System.out.println("Pooling:"+pool+" "+"fresh resources:"+fresh+" expired:"+expiredResources +"empty agents:"+emptyAgents.size());
 					stableMarriage();
 					AgentEvent.agentList.clear();
-					ResourceEvent.resList.clear();
+					//ResourceEvent.resList.clear();
 					initialPoolTime=initialPoolTime+ TimeUnit.SECONDS.toSeconds(30);
 					endPooltime=initialPoolTime+TimeUnit.SECONDS.toSeconds(30);
+					fresh=0;
 				}
+
 				Event e = toTrigger.trigger();
 				//System.out.println("Event"+toTrigger.getClass());
 				if (e != null) {

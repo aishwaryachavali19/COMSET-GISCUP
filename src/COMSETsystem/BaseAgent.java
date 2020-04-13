@@ -36,7 +36,7 @@ public abstract class BaseAgent {
 	 * 
 	 * This method must be overridden in every Agent implementation.
 	 */
-	public abstract void planSearchRoute(LinkedList<Intersection> path);
+	public abstract void planSearchRoute(LocationOnRoad currentLocation, long currentTime);
 
 	/**
 	 * This method must be overridden in every Agent implementation in order to return an Intersection that the
@@ -52,7 +52,6 @@ public abstract class BaseAgent {
 	 */
 	public abstract Intersection nextIntersection(LocationOnRoad currentLocation, long currentTime);
 
-	public abstract void clearRoute();
 
 
 	/**

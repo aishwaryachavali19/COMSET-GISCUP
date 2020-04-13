@@ -36,7 +36,6 @@ public class AgentEvent extends Event {
 	// Constants representing two causes for which the AgentEvent can be triggered.
 	public final static int INTERSECTION_REACHED = 0;
 	public final static int DROPPING_OFF = 1;
-	public final static int INITIAL_EVENT=2;
 
 	// The location at which the event is triggered.
 	LocationOnRoad loc;
@@ -70,7 +69,7 @@ public class AgentEvent extends Event {
 		super(startedSearch, simulator);
 		this.loc = loc;
 		this.startSearchTime = startedSearch;
-		this.eventCause = INITIAL_EVENT; // The introduction of an agent is considered a drop-off event.
+		this.eventCause = DROPPING_OFF; // The introduction of an agent is considered a drop-off event.
 		simulator.emptyAgents.add(this); 
 		try {
 			Constructor<? extends BaseAgent> cons = simulator.agentClass.getConstructor(Long.TYPE, CityMap.class);
@@ -96,22 +95,17 @@ public class AgentEvent extends Event {
 	Event trigger() throws Exception {
 		Logger.getLogger(this.getClass().getName()).log(Level.INFO, "******** AgentEvent id = " + id+ " triggered at time " + time, this);
 		Logger.getLogger(this.getClass().getName()).log(Level.INFO, "Loc = " + loc, this);
-		//Event e;
+		Event e;
 		if (eventCause == DROPPING_OFF) {
-			Event e = dropoffHandler();
-			return e;
-		}
-		if(eventCause == INITIAL_EVENT) {
-			initialEventHandler();
-			return null;
+			 e = dropoffHandler();
+
 		}
 		else {
-			Event e = intersectionReachedHandler();
-			return e;
+			 e = intersectionReachedHandler();
 		}
 
 		// add this event back on the event queue
-		//return e;
+		return e;
 	}
 
 	@Override
@@ -146,10 +140,6 @@ public class AgentEvent extends Event {
 		return this;
 	}
 
-	void initialEventHandler() {
-		agentList.add(this);
-		//return this;
-	}
 	/*
 	 * The handler of a DROPPING_OFF event.
 	 */
@@ -157,11 +147,16 @@ public class AgentEvent extends Event {
 		startSearchTime = time;
 		Logger.getLogger(this.getClass().getName()).log(Level.INFO, "Dropoff at " + loc, this);
 		// so if the agent was not empty, make it empty for other resources
+		LocationOnRoad locAgentCopy = simulator.agentCopy(loc);
+		agent.planSearchRoute(locAgentCopy, time);
 		if (!simulator.emptyAgents.contains(this)) {
 			// "Label" the agent as empty.
 			simulator.emptyAgents.add(this);
 		}
-
+		long nextEventTime = time + loc.road.travelTime - loc.travelTimeFromStartIntersection;
+		LocationOnRoad nextLoc = new LocationOnRoad(loc.road, loc.road.travelTime);
+		setEvent(nextEventTime, nextLoc, INTERSECTION_REACHED);
+		/*
 		rnd = new Random(10);
 		if (allHubs.size() == 0) {
 			for(int i=0; i<10; i++) {
@@ -193,6 +188,8 @@ public class AgentEvent extends Event {
 		else {
 			agent.clearRoute();
 		}
+
+		 */
 		return this;
 	}
 

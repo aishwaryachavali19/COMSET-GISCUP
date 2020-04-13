@@ -101,7 +101,7 @@ public class ResourceEvent extends Event {
 	 */
 	public Event becomeAvailableHandler() {
 		//total number of resources from dataset appearing through the simulation increases
-		System.out.println("inside becomeAvailableHandler");
+
 		++simulator.totalResources;
 
 		resList.add(this);
@@ -179,10 +179,17 @@ public class ResourceEvent extends Event {
 	 * Handler of an EXPIRED event.
 	 */
 	public void expireHandler() {
+
 		simulator.expiredResources ++;
 		simulator.totalResourceWaitTime += simulator.ResourceMaximumLifeTime;
 		simulator.waitingResources.remove(this);
+		ResourceEvent.resList.remove(this);
 		Logger.getLogger(this.getClass().getName()).log(Level.INFO, "Expired.", this);
 
+	}
+
+	public void setExpirationEvent(long time, int eventCause) {
+		this.time = time;
+		this.eventCause = eventCause;
 	}
 }

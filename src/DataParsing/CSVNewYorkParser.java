@@ -32,6 +32,8 @@ public class CSVNewYorkParser {
 
 	ZoneId zoneId;
 
+	public static int totalResourcesNo=0;
+
 	/**
 	 * Constructor of the CSVNewYorkParser class
 	 * @param path full path to the resource dataset file
@@ -76,7 +78,10 @@ public class CSVNewYorkParser {
 			//each line in input file will contain 4 tokens for the scanner and will be in the format : latitude longitude time type
 			//per line of input file we will create a new TimestampAgRe object
 			// and save the 4 tokens of each line in the corresponding field of the TimestampAgRe object
+			int counter=0;
 			while (sc.hasNext()) {
+				if(counter>10000)
+					break;
 				sc.next();// skip first VendorID
 				long time = dateConversion(sc.next());
 				sc.next();// skip these fields
@@ -94,6 +99,8 @@ public class CSVNewYorkParser {
 					continue;
 				}
 				resources.add(new Resource(pickupLat, pickupLon, dropoffLat, dropoffLon, time)); //create new resource with the above fields
+				totalResourcesNo++;
+				counter++;
 			}
 			sc.close();
 		} catch (Exception e) {

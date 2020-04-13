@@ -1,9 +1,12 @@
 package UserExamples;
 
-import COMSETsystem.*;
+import COMSETsystem.BaseAgent;
+import COMSETsystem.CityMap;
+import COMSETsystem.Intersection;
+import COMSETsystem.LocationOnRoad;
+import COMSETsystem.Road;
 
-import java.util.LinkedList;
-import java.util.Random;
+import java.util.*;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -21,6 +24,7 @@ public class AgentHubsDestination extends BaseAgent {
 
 	// random number generator
 	Random rnd;
+	public static ArrayList<Intersection> allHubs = new ArrayList<Intersection>();
 
 	// a static singleton object of a data model, shared by all agents
 	static DummyDataModel dataModel = null;
@@ -49,10 +53,35 @@ public class AgentHubsDestination extends BaseAgent {
 	 */
 
 	@Override
-	public void planSearchRoute(LinkedList<Intersection> path) {
+	public void planSearchRoute(LocationOnRoad currentLocation, long currentTime) {
+
+		String pattern = dataModel.foo(); // Pretend we are using some data model for routing.
+
 		route.clear();
-		route = path;
-		route.poll();
+
+		rnd = new Random(10);
+		if (allHubs.size() == 0) {
+			for(int i=0; i<40;i++){
+				int hubIndex = rnd.nextInt(map.intersections().size());
+				Intersection[] intersectionArray = map.intersections().values().toArray(new Intersection[map.intersections().size()]);
+				Intersection hub = intersectionArray[hubIndex];
+				allHubs.add(hub);
+			}
+		}
+		Intersection sourceIntersection = currentLocation.road.to;
+
+		Intersection destination_hub = null;
+		int hub = 0;
+
+		do {
+			hub = rnd.nextInt(allHubs.size());
+
+		}while(allHubs.get(hub) == sourceIntersection);
+
+		destination_hub = allHubs.get(hub);
+
+		route = map.shortestTravelTimePath(sourceIntersection, destination_hub);
+		route.poll(); // Ensure that route.get(0) != currentLocation.road.to.
 	}
 
 	/**
@@ -72,8 +101,9 @@ public class AgentHubsDestination extends BaseAgent {
 			Intersection nextIntersection = route.poll();
 			return nextIntersection;
 		} else {
-			// Finished the planned route.
-			return null;
+			// Finished the planned route. Plan a new route.
+			planSearchRoute(currentLocation, currentTime);
+			return route.poll();
 		}
 	}
 
@@ -83,20 +113,15 @@ public class AgentHubsDestination extends BaseAgent {
 	 */
 
 	@Override
-	public void clearRoute() {
-		route.clear();
-	}
-
-	@Override
 	public void assignedTo(LocationOnRoad currentLocation, long currentTime, long resourceId, LocationOnRoad resourcePikcupLocation, LocationOnRoad resourceDropoffLocation) {
 		// Clear the current route.
 		route.clear();
-
-		Logger.getLogger(this.getClass().getName()).log(Level.INFO, "Agent " + this.id + " assigned to resource " + resourceId);
-		Logger.getLogger(this.getClass().getName()).log(Level.INFO, "currentLocation = " + currentLocation);
-		Logger.getLogger(this.getClass().getName()).log(Level.INFO, "currentTime = " + currentTime);
-		Logger.getLogger(this.getClass().getName()).log(Level.INFO, "resourcePickupLocation = " + resourcePikcupLocation);
-		Logger.getLogger(this.getClass().getName()).log(Level.INFO, "resourceDropoffLocation = " + resourceDropoffLocation);
+//
+//		Logger.getLogger(this.getClass().getName()).log(Level.INFO, "Agent " + this.id + " assigned to resource " + resourceId);
+//		Logger.getLogger(this.getClass().getName()).log(Level.INFO, "currentLocation = " + currentLocation);
+//		Logger.getLogger(this.getClass().getName()).log(Level.INFO, "currentTime = " + currentTime);
+//		Logger.getLogger(this.getClass().getName()).log(Level.INFO, "resourcePickupLocation = " + resourcePikcupLocation);
+//		Logger.getLogger(this.getClass().getName()).log(Level.INFO, "resourceDropoffLocation = " + resourceDropoffLocation);
 	}
 
 }
