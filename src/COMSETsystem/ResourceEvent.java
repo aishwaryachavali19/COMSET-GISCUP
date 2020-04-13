@@ -80,7 +80,7 @@ public class ResourceEvent extends Event {
 		}
 		if (eventCause == BECOME_AVAILABLE) {
 			Event e = becomeAvailableHandler();
-			return null;
+			return e;
 		} else {
 			expireHandler();
 			return null;
@@ -100,6 +100,9 @@ public class ResourceEvent extends Event {
 		//total number of resources from dataset appearing through the simulation increases
 		++simulator.totalResources;
 		resList.add(this);
+		this.time += simulator.ResourceMaximumLifeTime;
+		this.eventCause = EXPIRED;
+
 		// finds the agent with least travel time between itself and this resource
 		/*AgentEvent bestAgent = null;
 		long earliest = Long.MAX_VALUE;
@@ -122,7 +125,6 @@ public class ResourceEvent extends Event {
 				bestAgent = agent;
 				earliest = arriveTime;
 				bestAgentLocationOnRoad = agentLocationOnRoad;
-			}
 		}
 
 		if (earliest > availableTime + simulator.ResourceMaximumLifeTime) {
