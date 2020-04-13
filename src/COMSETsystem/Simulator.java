@@ -9,7 +9,6 @@ import java.util.concurrent.TimeUnit;
 import UserExamples.HungarianAlgorithm;
 import me.tongfei.progressbar.*;
 
-
 import DataParsing.*;
 
 
@@ -61,6 +60,8 @@ public class Simulator {
 
 	// The simulation end time is the expiration time of the last resource.
 	protected long simulationEndTime;
+
+	protected long totalPools = 0;
 
 	// Total trip time of all resources to which agents have been assigned.
 	protected long totalResourceTripTime = 0;
@@ -209,7 +210,6 @@ public class Simulator {
 		Map<AgentEvent,Long> agentArriveTime = new HashMap<>();
 		int id=0;
 		for(ResourceEvent event:ResourceEvent.resList){
-				//events.remove(event);
 				agentInResList = new ArrayList<>();//Snehal
 				resAgent = new ArrayList<>();//Snehal
 				AgentEvent bestAgent = null;
@@ -249,10 +249,10 @@ public class Simulator {
 				}
 				if (Collections.frequency(resAgent, 0.0) == resAgent.size())
 				{
-					events.remove(((ResourceEvent) event));
-					event.setExpirationEvent(((ResourceEvent) event).time + ResourceMaximumLifeTime, ResourceEvent.EXPIRED);
+//					events.remove(((ResourceEvent) event));
+//					event.setExpirationEvent(((ResourceEvent) event).time + ResourceMaximumLifeTime, ResourceEvent.EXPIRED);
 					waitingResources.add(((ResourceEvent) event));
-					events.add(((ResourceEvent) event));
+//					events.add(((ResourceEvent) event));
 					continue;
 				}
 				ResAgentLocationOnRoad.put(((ResourceEvent) event), AgentOnRoad);
@@ -263,6 +263,9 @@ public class Simulator {
 				id++;
 		}
 		if(costMatrix.size()!=0) {
+
+			totalPools++;
+
 			System.out.println("##Hungarian - Agent in resource list" + agentInResList.size());
 			System.out.println("##Hungarian - resource agent " + resAgent.size());
 			System.out.println("##Costmatrix - " + costMatrix.size());
@@ -271,44 +274,56 @@ public class Simulator {
 			int[][] assignment = HungarianAlgorithm.hgAlgorithmAssignments(array, "max");
 			double cost = HungarianAlgorithm.hgAlgorithm(array, "max");
 			System.out.println("cost" + cost);
-			long prevResId = -1, prevAgentId = -1;
-			double repCost = 0;
-			int count = 0;
-			int assignmentSize = Math.min(resAgent.size(), costMatrix.size());
-			for (int i = 0; i < assignmentSize; i++) {
+			if(assignment.length > 0) {
+				long prevResId = -1, prevAgentId = -1;
+				double repCost = 0;
+				int count = 0;
+				int assignmentSize = Math.min(resAgent.size(), costMatrix.size());
+				for (int i = 0; i < assignmentSize; i++) {
 
-				ResourceEvent resEvent = IdResource.get(assignment[i][0]);
-				List<AgentEvent> ag = IdAgent.get(assignment[i][0]);
-				//AgentEvent agentEvent = ag.get(assignment[i][1]);
-				if (array[assignment[i][0]][assignment[i][1]] != 0.0) {
+					ResourceEvent resEvent = IdResource.get(assignment[i][0]);
+					List<AgentEvent> ag = IdAgent.get(assignment[i][0]);
+					//AgentEvent agentEvent = ag.get(assignment[i][1]);
+					if (array[assignment[i][0]][assignment[i][1]] != 0.0) {
+
 					System.out.println("Resource Id " + resEvent.id + " assigned to " + "Agent Id " + ag.get(assignment[i][1]).id + " Benefit " + array[assignment[i][0]][assignment[i][1]]);
-					waitingResources.remove(resEvent);
-					ResourceEvent.resList.remove(resEvent);
-					events.remove(resEvent);
-					AgentEvent bestAgent = ag.get(assignment[i][1]); //Agent assigned to the resource
-					// Inform the assignment to the agent.
-					LocationOnRoad agentLocation = ResAgentLocationOnRoad.get(resEvent).get(bestAgent);
-					bestAgent.assignedTo(agentLocation, resEvent.time, resEvent.id, resEvent.pickupLoc, resEvent.dropoffLoc);
-					// "Label" the agent as occupied.
-					assignedAgents.add(bestAgent);
-					emptyAgents.remove(bestAgent);
-					events.remove(bestAgent);
-					long agentArrival = ResAgentArriveTime.get(resEvent).get(bestAgent);
-					bestAgent.setEvent(agentArrival + resEvent.tripTime, resEvent.dropoffLoc, AgentEvent.DROPPING_OFF);
-					events.add(bestAgent);
+						totalAssignments++;
+						System.out.println("Total assignments: " + totalAssignments + "\n");
+						waitingResources.remove(resEvent);
+						ResourceEvent.resList.remove(resEvent);
+						events.remove(resEvent);
+						AgentEvent bestAgent = ag.get(assignment[i][1]); //Agent assigned to the resource
+						// Inform the assignment to the agent.
+						LocationOnRoad agentLocation = ResAgentLocationOnRoad.get(resEvent).get(bestAgent);
+						bestAgent.assignedTo(agentLocation, resEvent.time, resEvent.id, resEvent.pickupLoc, resEvent.dropoffLoc);
+						// "Label" the agent as occupied.
+						assignedAgents.add(bestAgent);
+						emptyAgents.remove(bestAgent);
+						events.remove(bestAgent);
+						long agentArrival = ResAgentArriveTime.get(resEvent).get(bestAgent);
+						bestAgent.setEvent(agentArrival + resEvent.tripTime, resEvent.dropoffLoc, AgentEvent.DROPPING_OFF);
+						events.add(bestAgent);
 
-					long cruiseTime = resEvent.time - bestAgent.startSearchTime;
-					long approachTime = agentArrival - resEvent.time;
-					long searchTime = cruiseTime + approachTime;
-					long waitTime = agentArrival - resEvent.availableTime;
+						long cruiseTime = resEvent.time - bestAgent.startSearchTime;
+						long approachTime = agentArrival - resEvent.time;
+						long searchTime = cruiseTime + approachTime;
+						long waitTime = agentArrival - resEvent.availableTime;
 
-					totalAgentCruiseTime += cruiseTime;
-					totalAgentApproachTime += approachTime;
-					totalAgentSearchTime += searchTime;
-					totalResourceWaitTime += waitTime;
-					totalAssignments++;
+						totalAgentCruiseTime += cruiseTime;
+						totalAgentApproachTime += approachTime;
+						totalAgentSearchTime += searchTime;
+						totalResourceWaitTime += waitTime;
+					}
 				}
 			}
+
+		}
+		System.out.println("Restlist: " + ResourceEvent.resList.size());
+		for(ResourceEvent event: ResourceEvent.resList) {
+//			events.remove(((ResourceEvent) event));
+//			event.setExpirationEvent(((ResourceEvent) event).time + ResourceMaximumLifeTime, ResourceEvent.EXPIRED);
+			waitingResources.add(((ResourceEvent) event));
+//			events.add(((ResourceEvent) event));
 		}
 
 	}
@@ -356,9 +371,7 @@ public class Simulator {
 				}
 			}
 		} catch (Exception e) {
-			System.out.println(resources);
-			System.out.println(tocheck.id);
-			System.out.println(tocheck.time);
+//			System.out.println(resources);
 			e.printStackTrace();
 		}
 
@@ -472,6 +485,8 @@ public class Simulator {
 				sb.append("total number of assignments: " + totalAssignments + "\n");
 				sb.append("total resouces: " + totalResources + "\n");
 				sb.append("Total Benefit: " + totalBenefit + "\n");
+				sb.append("COST MATRIX COUNT: " + totalPools);
+				sb.append("Reslist: " + ResourceEvent.resList.size());
 			} else {
 				sb.append("No resources.\n");
 			}
