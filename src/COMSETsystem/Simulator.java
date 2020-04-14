@@ -536,7 +536,7 @@ public class Simulator {
 
 
 				long cruiseTime = ag.time - ag.startSearchTime;
-				long approachTime = earliest - ag.time;
+				long approachTime = ag.time - earliest;
 				long searchTime = cruiseTime + approachTime;
 				long waitTime = earliest - ev.availableTime;
 
@@ -744,6 +744,7 @@ public class Simulator {
 				sb.append("resource expiration percentage: " + Math.floorDiv(expiredResources * 100, totalResources) + "%\n");
 				sb.append("\n");
 				sb.append("average agent cruise time: " + Math.floorDiv(totalAgentCruiseTime, totalAssignments) + " seconds \n");
+				//sb.append("total agent approach time: " + totalAgentApproachTime+ " seconds \n");
 				sb.append("average agent approach time: " + Math.floorDiv(totalAgentApproachTime, totalAssignments) + " seconds \n");
 				sb.append("average resource trip time: " + Math.floorDiv(totalResourceTripTime, totalAssignments) + " seconds \n");
 				sb.append("total number of assignments: " + totalAssignments + "\n");
