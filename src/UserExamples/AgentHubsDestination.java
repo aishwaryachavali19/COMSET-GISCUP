@@ -54,6 +54,25 @@ public class AgentHubsDestination extends BaseAgent {
 
 	@Override
 	public void planSearchRoute(LocationOnRoad currentLocation, long currentTime) {
+		/*
+		//Original COMSET code
+		String pattern = dataModel.foo(); // Pretend we are using some data model for routing.
+
+		route.clear();
+		Intersection sourceIntersection = currentLocation.road.to;
+		int destinationIndex = rnd.nextInt(map.intersections().size());
+		Intersection[] intersectionArray = map.intersections().values().toArray(new Intersection[map.intersections().size()]);
+		Intersection destinationIntersection = intersectionArray[destinationIndex];
+		if (destinationIntersection == sourceIntersection) {
+			// destination cannot be the source
+			// if destination is the source, choose a neighbor to be the destination
+			Road[] roadsFrom = sourceIntersection.roadsMapFrom.values().toArray(new Road[sourceIntersection.roadsMapFrom.values().size()]);
+			destinationIntersection = roadsFrom[0].to;
+		}
+		route = map.shortestTravelTimePath(sourceIntersection, destinationIntersection);
+		route.poll(); // Ensure that route.get(0) != currentLocation.road.to.
+		*/
+		//Hubs our code
 
 		String pattern = dataModel.foo(); // Pretend we are using some data model for routing.
 
@@ -82,6 +101,7 @@ public class AgentHubsDestination extends BaseAgent {
 
 		route = map.shortestTravelTimePath(sourceIntersection, destination_hub);
 		route.poll(); // Ensure that route.get(0) != currentLocation.road.to.
+
 	}
 
 	/**

@@ -144,6 +144,23 @@ public class AgentEvent extends Event {
 	 * The handler of a DROPPING_OFF event.
 	 */
 	Event dropoffHandler() {
+		/*
+		//Old COMSET code
+		LocationOnRoad locAgentCopy = simulator.agentCopy(loc);
+		agent.planSearchRoute(locAgentCopy, time);
+		if (!simulator.emptyAgents.contains(this)) {
+			// "Label" the agent as empty.
+			simulator.emptyAgents.add(this);
+		}
+		// move to the end intersection of the current road
+		long nextEventTime = time + loc.road.travelTime - loc.travelTimeFromStartIntersection;
+		LocationOnRoad nextLoc = new LocationOnRoad(loc.road, loc.road.travelTime);
+		setEvent(nextEventTime, nextLoc, INTERSECTION_REACHED);
+
+		return this;
+		*/
+		//Hub's code
+
 		startSearchTime = time;
 		Logger.getLogger(this.getClass().getName()).log(Level.INFO, "Dropoff at " + loc, this);
 		// so if the agent was not empty, make it empty for other resources
@@ -156,41 +173,9 @@ public class AgentEvent extends Event {
 		long nextEventTime = time + loc.road.travelTime - loc.travelTimeFromStartIntersection;
 		LocationOnRoad nextLoc = new LocationOnRoad(loc.road, loc.road.travelTime);
 		setEvent(nextEventTime, nextLoc, INTERSECTION_REACHED);
-		/*
-		rnd = new Random(10);
-		if (allHubs.size() == 0) {
-			for(int i=0; i<10; i++) {
-				int hubIndex = rnd.nextInt(simulator.map.intersections().size());
-				Intersection[] intersectionArray = simulator.map.intersections().values().toArray(new Intersection[simulator.map.intersections().size()]);
-				Intersection hub = intersectionArray[hubIndex];
-				allHubs.add(hub);
-			}
-		}
 
-		LocationOnRoad currentLocation = simulator.agentCopy(loc);
-		Intersection sourceIntersection = currentLocation.road.to;
-		Intersection nearest_Hub = null;
-		Long minTime = Long.MAX_VALUE;
-		for (Intersection hub : allHubs) {
-			Long travelTime = simulator.map.travelTimeBetween(sourceIntersection, hub);
-			if (travelTime < minTime) {
-				minTime = travelTime;
-				nearest_Hub = hub;
-			}
-		}
-
-		if (nearest_Hub != sourceIntersection) {
-			LinkedList<Intersection> shortestPath;
-			shortestPath = simulator.map.shortestTravelTimePath(sourceIntersection, nearest_Hub);
-			agent.planSearchRoute(shortestPath);
-
-		}
-		else {
-			agent.clearRoute();
-		}
-
-		 */
 		return this;
+
 	}
 
 	public void assignedTo(LocationOnRoad currentLocation, long currentTime, long resourceId, LocationOnRoad resourcePickupLocation, LocationOnRoad resourceDropoffLocation) {

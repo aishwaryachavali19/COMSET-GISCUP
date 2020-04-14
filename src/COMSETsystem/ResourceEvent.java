@@ -41,6 +41,8 @@ public class ResourceEvent extends Event {
 
 	public static PriorityQueue<ResourceEvent> resList = new PriorityQueue<>();
 
+	boolean fresh;
+
 	/**
 	 * Constructor for class ResourceEvent.
 	 *
@@ -57,6 +59,7 @@ public class ResourceEvent extends Event {
 		this.eventCause = BECOME_AVAILABLE;
 		this.expirationTime = availableTime + simulator.ResourceMaximumLifeTime;
 		this.tripTime = simulator.map.travelTimeBetween(pickupLoc, dropoffLoc);
+		this.fresh=true;
 	}
 
 	/**
@@ -83,7 +86,7 @@ public class ResourceEvent extends Event {
 		}
 		if (eventCause == BECOME_AVAILABLE) {
 			Event e = becomeAvailableHandler();
-			return null;
+			return e;
 		} else {
 			expireHandler();
 			return null;
@@ -103,7 +106,8 @@ public class ResourceEvent extends Event {
 		//total number of resources from dataset appearing through the simulation increases
 
 		++simulator.totalResources;
-
+		this.eventCause=EXPIRED;
+		this.time+=simulator.ResourceMaximumLifeTime;
 		resList.add(this);
 		// finds the agent with least travel time between itself and this resource
 /*		AgentEvent bestAgent = null;
