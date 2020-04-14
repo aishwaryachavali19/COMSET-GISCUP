@@ -234,7 +234,7 @@ public class Simulator {
 				LocationOnRoad agentLocationOnRoad;
 				if(event.fresh)
 				{
-					long travelTimeToEndIntersection = agent.time - ((ResourceEvent) event).time;
+					long travelTimeToEndIntersection = agent.time - ((ResourceEvent) event).availableTime;
 					long travelTimeFromStartIntersection = agent.loc.road.travelTime - travelTimeToEndIntersection;
 					agentLocationOnRoad = new LocationOnRoad(agent.loc.road, travelTimeFromStartIntersection);
 					long travelTime = map.travelTimeBetween(agentLocationOnRoad, ((ResourceEvent) event).pickupLoc);
@@ -302,7 +302,7 @@ public class Simulator {
 
 				if(event.fresh)
 				{
-					long travelTimeToEndIntersection = agent.time - ((ResourceEvent) event).time;
+					long travelTimeToEndIntersection = agent.time - ((ResourceEvent) event).availableTime;
 					long travelTimeFromStartIntersection = agent.loc.road.travelTime - travelTimeToEndIntersection;
 					LocationOnRoad agentLocationOnRoad = new LocationOnRoad(agent.loc.road, travelTimeFromStartIntersection);
 					long travelTime = map.travelTimeBetween(agentLocationOnRoad, ((ResourceEvent) event).pickupLoc);
