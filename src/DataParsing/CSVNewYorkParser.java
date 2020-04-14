@@ -80,8 +80,8 @@ public class CSVNewYorkParser {
 			// and save the 4 tokens of each line in the corresponding field of the TimestampAgRe object
 			int counter=1;
 			while (sc.hasNext()) {
-				if(counter>100001)
-					break;
+				//if(counter>1000)
+					//break;
 				sc.next();// skip first VendorID
 				long time = dateConversion(sc.next());
 				sc.next();// skip these fields
@@ -100,7 +100,7 @@ public class CSVNewYorkParser {
 				}
 				resources.add(new Resource(pickupLat, pickupLon, dropoffLat, dropoffLon, time)); //create new resource with the above fields
 				totalResourcesNo++;
-				counter++;
+				//counter++;
 			}
 			sc.close();
 		} catch (Exception e) {

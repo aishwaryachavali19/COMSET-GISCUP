@@ -535,8 +535,8 @@ public class Simulator {
 				assignedAgents.add(ag);
 
 
-				long cruiseTime = ev.time - ag.startSearchTime;
-				long approachTime = earliest - ev.time;
+				long cruiseTime = ag.time - ag.startSearchTime;
+				long approachTime = earliest - ag.time;
 				long searchTime = cruiseTime + approachTime;
 				long waitTime = earliest - ev.availableTime;
 
