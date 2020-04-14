@@ -32,6 +32,8 @@ public class ResourceEvent extends Event {
 	// The time at which the resource will be expired
 	final long expirationTime;
 
+	public boolean isFresh;
+
 	// The cause of the AgentEvent to be triggered, either BECOME_AVAILABLE or EXPIRED
 	int eventCause;
 
@@ -54,6 +56,7 @@ public class ResourceEvent extends Event {
 		this.eventCause = BECOME_AVAILABLE;
 		this.expirationTime = availableTime + simulator.ResourceMaximumLifeTime;
 		this.tripTime = simulator.map.travelTimeBetween(pickupLoc, dropoffLoc);
+		this.isFresh = true;
 	}
 
 	/**
@@ -80,7 +83,7 @@ public class ResourceEvent extends Event {
 		}
 		if (eventCause == BECOME_AVAILABLE) {
 			Event e = becomeAvailableHandler();
-			return e;
+			return null;
 		} else {
 			expireHandler();
 			return null;
@@ -100,8 +103,8 @@ public class ResourceEvent extends Event {
 		//total number of resources from dataset appearing through the simulation increases
 		++simulator.totalResources;
 		resList.add(this);
-		this.time += simulator.ResourceMaximumLifeTime;
-		this.eventCause = EXPIRED;
+//		this.time += simulator.ResourceMaximumLifeTime;
+//		this.eventCause = EXPIRED;
 		// finds the agent with least travel time between itself and this resource
 		/*AgentEvent bestAgent = null;
 		long earliest = Long.MAX_VALUE;

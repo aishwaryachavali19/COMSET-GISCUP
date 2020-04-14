@@ -5,7 +5,7 @@ import MapCreation.*;
 import java.text.NumberFormat;
 import java.util.*;
 import java.util.concurrent.TimeUnit;
-
+import UserExamples.HungarianNew;
 import UserExamples.HungarianAlgorithm;
 import me.tongfei.progressbar.*;
 
@@ -217,16 +217,26 @@ public class Simulator {
 				long farthest= Long.MIN_VALUE;
 				long earliest = Long.MAX_VALUE;
 				LocationOnRoad bestAgentLocationOnRoad = null;
+				LocationOnRoad agentLocationOnRoad = null;
 				ArrayList<AgentEvent> aList=new ArrayList<AgentEvent>(10);
 				AgentOnRoad = new HashMap<>();
+				long arriveTime = Long.MAX_VALUE;
+				long travelTime = Long.MAX_VALUE;
 				for (AgentEvent agent : emptyAgents) {
-					long travelTimeToEndIntersection = agent.time - ((ResourceEvent) event).time;
-					long travelTimeFromStartIntersection = agent.loc.road.travelTime - travelTimeToEndIntersection;
-					LocationOnRoad agentLocationOnRoad = new LocationOnRoad(agent.loc.road, travelTimeFromStartIntersection);
-					//Store the locationOnRoad of the agent in the map
-					long travelTime = map.travelTimeBetween(agentLocationOnRoad, ((ResourceEvent) event).pickupLoc);
-					long arriveTime = travelTime +((ResourceEvent) event).time;
 
+					if (event.isFresh) {
+						long travelTimeToEndIntersection = agent.time - ((ResourceEvent) event).time;
+						long travelTimeFromStartIntersection = agent.loc.road.travelTime - travelTimeToEndIntersection;
+						agentLocationOnRoad = new LocationOnRoad(agent.loc.road, travelTimeFromStartIntersection);
+						//Store the locationOnRoad of the agent in the map
+						travelTime = map.travelTimeBetween(agentLocationOnRoad, ((ResourceEvent) event).pickupLoc);
+						arriveTime = travelTime + agent.time;
+					}
+					else {
+						agentLocationOnRoad = agent.loc;
+						travelTime = map.travelTimeBetween(agentLocationOnRoad, ((ResourceEvent) event).pickupLoc);
+						arriveTime = travelTime + agent.time;
+					}
 
 					//New distance for benefits
 					long distance=map.travelDistanceBetween(agentLocationOnRoad,((ResourceEvent) event).pickupLoc);
@@ -244,15 +254,20 @@ public class Simulator {
 					}
 					else{
 						resAgent.add(0.0);
-						agentInResList.add(null);
+						agentInResList.add(agent);
+						AgentOnRoad.put(agent,agentLocationOnRoad);
+						//Store the arrive time for each agent
+						agentArriveTime.put(agent,arriveTime);
 					}
 				}
 				if (Collections.frequency(resAgent, 0.0) == resAgent.size())
 				{
-					//events.remove(((ResourceEvent) event));
-					//event.setExpirationEvent(((ResourceEvent) event).time + ResourceMaximumLifeTime, ResourceEvent.EXPIRED);
+					events.remove(((ResourceEvent) event));
+					waitingResources.remove(((ResourceEvent) event));
+					event.setExpirationEvent(((ResourceEvent) event).availableTime + ResourceMaximumLifeTime, ResourceEvent.EXPIRED);
 					waitingResources.add(((ResourceEvent) event));
-					//events.add(((ResourceEvent) event));
+					events.add(((ResourceEvent) event));
+					event.isFresh = false;
 					continue;
 				}
 				ResAgentLocationOnRoad.put(((ResourceEvent) event), AgentOnRoad);
@@ -272,6 +287,7 @@ public class Simulator {
 			System.out.println("Final matrix size " + costMatrix.size());
 			double[][] array = costMatrix.stream().map(l -> l.stream().mapToDouble(i -> i).toArray()).toArray(double[][]::new);
 			int[][] assignment = HungarianNew.getAssignment(array, "max");
+			System.out.println("After Hungarian assigns\n");
 			//double cost = HungarianAlgorithm.hgAlgorithm(array, "max");
 			//System.out.println("cost" + cost);
 			long prevResId = -1, prevAgentId = -1;
@@ -286,7 +302,7 @@ public class Simulator {
 					AgentEvent bestAgent = null;
 					if(array.length>array[0].length)
 					{
-						if(array[assignment[i][1]][assignment[i][0]] !=0.0) {
+						//if(array[assignment[i][1]][assignment[i][0]] !=0.0) {
 							resEvent = IdResource.get(assignment[i][1]);
 							List<AgentEvent> ag = IdAgent.get(assignment[i][1]);
 							bestAgent = ag.get(assignment[i][0]);
@@ -298,7 +314,7 @@ public class Simulator {
 							//Agent assigned to the resource
 							// Inform the assignment to the agent.
 							LocationOnRoad agentLocation = ResAgentLocationOnRoad.get(resEvent).get(bestAgent);
-							bestAgent.assignedTo(agentLocation, resEvent.time, resEvent.id, resEvent.pickupLoc, resEvent.dropoffLoc);
+							//bestAgent.assignedTo(agentLocation, resEvent.time, resEvent.id, resEvent.pickupLoc, resEvent.dropoffLoc);
 							// "Label" the agent as occupied.
 							assignedAgents.add(bestAgent);
 							emptyAgents.remove(bestAgent);
@@ -306,8 +322,8 @@ public class Simulator {
 							long agentArrival = ResAgentArriveTime.get(resEvent).get(bestAgent);
 							bestAgent.setEvent(agentArrival + resEvent.tripTime, resEvent.dropoffLoc, AgentEvent.DROPPING_OFF);
 							events.add(bestAgent);
-							long cruiseTime = resEvent.time - bestAgent.startSearchTime;
-							long approachTime = agentArrival - resEvent.time;
+							long cruiseTime = bestAgent.time - bestAgent.startSearchTime;
+							long approachTime = agentArrival - bestAgent.time;
 							long searchTime = cruiseTime + approachTime;
 							long waitTime = agentArrival - resEvent.availableTime;
 							totalAgentCruiseTime += cruiseTime;
@@ -315,24 +331,24 @@ public class Simulator {
 							totalAgentSearchTime += searchTime;
 							totalResourceWaitTime += waitTime;
 							totalAssignments++;
-						}
+						//}
 					}
 					else{
-  						if(array[assignment[i][1]][assignment[i][0]] != 0.0) {
+  						//if(array[assignment[i][0]][assignment[i][1]] != 0.0) {
 
 
 							resEvent = IdResource.get(assignment[i][0]);
 							List<AgentEvent> ag = IdAgent.get(assignment[i][0]);
 							bestAgent = ag.get(assignment[i][1]);
 							System.out.println("Resource Id " + resEvent.id + " assigned to " + "Agent Id " + ag.get(assignment[i][1]).id + " Benefit " + array[assignment[i][0]][assignment[i][1]]);
-							totalBenefit += array[assignment[i][1]][assignment[i][0]];
+							totalBenefit += array[assignment[i][0]][assignment[i][1]];
 							waitingResources.remove(resEvent);
 							ResourceEvent.resList.remove(resEvent);
 							events.remove(resEvent);
 							//Agent assigned to the resource
 							// Inform the assignment to the agent.
 							LocationOnRoad agentLocation = ResAgentLocationOnRoad.get(resEvent).get(bestAgent);
-							bestAgent.assignedTo(agentLocation, resEvent.time, resEvent.id, resEvent.pickupLoc, resEvent.dropoffLoc);
+							//bestAgent.assignedTo(agentLocation, resEvent.time, resEvent.id, resEvent.pickupLoc, resEvent.dropoffLoc);
 							// "Label" the agent as occupied.
 							assignedAgents.add(bestAgent);
 							emptyAgents.remove(bestAgent);
@@ -340,8 +356,8 @@ public class Simulator {
 							long agentArrival = ResAgentArriveTime.get(resEvent).get(bestAgent);
 							bestAgent.setEvent(agentArrival + resEvent.tripTime, resEvent.dropoffLoc, AgentEvent.DROPPING_OFF);
 							events.add(bestAgent);
-							long cruiseTime = resEvent.time - bestAgent.startSearchTime;
-							long approachTime = agentArrival - resEvent.time;
+							long cruiseTime = bestAgent.time - bestAgent.startSearchTime;
+							long approachTime = agentArrival - bestAgent.time;
 							long searchTime = cruiseTime + approachTime;
 							long waitTime = agentArrival - resEvent.availableTime;
 							totalAgentCruiseTime += cruiseTime;
@@ -349,7 +365,7 @@ public class Simulator {
 							totalAgentSearchTime += searchTime;
 							totalResourceWaitTime += waitTime;
 							totalAssignments++;
-						}
+						//}
 					}
 
 				//}
@@ -357,7 +373,12 @@ public class Simulator {
 		}
 		for(ResourceEvent event:ResourceEvent.resList)
 		{
-			waitingResources.add(event);
+			events.remove(((ResourceEvent) event));
+			waitingResources.remove(((ResourceEvent) event));
+			event.setExpirationEvent(((ResourceEvent) event).availableTime + ResourceMaximumLifeTime, ResourceEvent.EXPIRED);
+			waitingResources.add(((ResourceEvent) event));
+			event.isFresh = false;
+			events.add(((ResourceEvent) event));
 		}
 	}
 
@@ -372,8 +393,8 @@ public class Simulator {
 		Event tocheck=null;
 		int resources=0;
 		System.out.println("Running the simulation...");
-		initialPoolTime=initialPoolTime+ TimeUnit.SECONDS.toSeconds(30);
-		endPooltime=initialPoolTime+ TimeUnit.SECONDS.toSeconds(30);
+		initialPoolTime=initialPoolTime+ TimeUnit.SECONDS.toSeconds(60);
+		endPooltime=initialPoolTime+ TimeUnit.SECONDS.toSeconds(60);
 		ScoreInfo score = new ScoreInfo();
 		if (map == null) {
 			System.out.println("map is null at beginning of run");
@@ -387,7 +408,7 @@ public class Simulator {
 					resources++;
 				}
 				pb.stepTo((long)(((float)(toTrigger.time - beginTime)) / (simulationEndTime - beginTime) * 100.0));
-				if((toTrigger.getClass()==ResourceEvent.class && toTrigger.time>=initialPoolTime && toTrigger.time<endPooltime) || resources==CSVNewYorkParser.totalNoOfResources) {
+				if((toTrigger.getClass()==ResourceEvent.class && toTrigger.time>=initialPoolTime && toTrigger.time<endPooltime) || (resources==CSVNewYorkParser.totalNoOfResources && toTrigger.getClass()==ResourceEvent.class)) {
 					if(ResourceEvent.resList.isEmpty()) {
 						continue;
 					}
@@ -395,8 +416,8 @@ public class Simulator {
 					numberOfPools++;
 					createCostMatrix();
 					AgentEvent.agentList.clear();
-					initialPoolTime=initialPoolTime+ TimeUnit.SECONDS.toSeconds(30);
-					endPooltime=initialPoolTime+ TimeUnit.SECONDS.toSeconds(30);
+					initialPoolTime=initialPoolTime+ TimeUnit.SECONDS.toSeconds(60);
+					endPooltime=initialPoolTime+ TimeUnit.SECONDS.toSeconds(60);
 				}
 				Event e = toTrigger.trigger();
 				if (e != null) {
