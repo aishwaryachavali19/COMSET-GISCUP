@@ -9,7 +9,7 @@ import java.util.ArrayList;
 import java.util.PriorityQueue;
 import java.util.Random;
 
-import org.apache.log4j.jmx.Agent;
+//import org.apache.log4j.jmx.Agent;
 
 /**
  * The MapWithData class is responsible for loading a resource dataset file,

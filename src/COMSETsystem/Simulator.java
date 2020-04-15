@@ -92,7 +92,6 @@ public class Simulator {
 	protected long expiredResources = 0;
 
 	protected long initialPoolTime;
-
 	protected long endPooltime=0;
 
 	// The number of resources that have been introduced to the system.
@@ -310,7 +309,6 @@ public class Simulator {
 				long tripDistance=map.travelDistanceBetween(((ResourceEvent) event).pickupLoc,((ResourceEvent) event).dropoffLoc);
 				double benefit= (double)tripDistance/(tripDistance + distance);
 				long arriveTime;
-
 
 				if(event.fresh)
 				{
@@ -658,6 +656,7 @@ public class Simulator {
 					endPooltime=initialPoolTime+TimeUnit.SECONDS.toSeconds(assignmentPeriod);
 					fresh=0;
 				}
+
 				Event e = toTrigger.trigger();
 				if(events.contains(e))
 						System.out.println("Duplicate event!"+e.id);
