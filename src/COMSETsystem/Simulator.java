@@ -4,6 +4,8 @@ import MapCreation.*;
 
 import java.io.File;
 import java.text.NumberFormat;
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.*;
 import java.util.concurrent.TimeUnit;
 import java.util.logging.Level;
@@ -14,6 +16,8 @@ import me.tongfei.progressbar.*;
 
 
 import DataParsing.*;
+
+import static java.lang.Double.NaN;
 
 /**
  * The Simulator class defines the major steps of the simulation. It is
@@ -88,6 +92,7 @@ public class Simulator {
 	protected long expiredResources = 0;
 
 	protected long initialPoolTime;
+
 	protected long endPooltime=0;
 
 	// The number of resources that have been introduced to the system.
@@ -107,6 +112,8 @@ public class Simulator {
 	protected final Class<? extends BaseAgent> agentClass;
 
 	protected long assignmentPeriod;
+
+	protected double totalBenefit=0;
 	//Snehal
 	protected GeoProjector geoProj;
 	protected long FirstResourceTime;
@@ -196,7 +203,7 @@ public class Simulator {
 	 * My method to try and create preference lists of resources
 	 */
 
-	public void stableMarriage()
+	public void stableMarriage(long toTriggerTime)
 	{
 		HashMap<Long, ArrayList<Long>> resPrefList= new HashMap<Long, ArrayList<Long>>();
 		HashMap<Long,HashMap<Long,LocationOnRoad> > resAgentLocationOnRoad= new HashMap<Long, HashMap<Long,LocationOnRoad>>();
@@ -232,6 +239,8 @@ public class Simulator {
 				// Thus the assumption is still true.
 				long arriveTime;
 				LocationOnRoad agentLocationOnRoad;
+				//This makes no sense!!
+
 				if(event.fresh)
 				{
 					long travelTimeToEndIntersection = agent.time - ((ResourceEvent) event).availableTime;
@@ -246,6 +255,8 @@ public class Simulator {
 					arriveTime= travelTime +agent.time;
 					agentLocationOnRoad=agent.loc;
 				}
+
+				arriveTime=toTriggerTime;
 				if(arriveTime<((ResourceEvent) event).expirationTime)
 				{
 					currentArrivalTime.put(agent.id,arriveTime);
@@ -300,6 +311,7 @@ public class Simulator {
 				double benefit= (double)tripDistance/(tripDistance + distance);
 				long arriveTime;
 
+
 				if(event.fresh)
 				{
 					long travelTimeToEndIntersection = agent.time - ((ResourceEvent) event).availableTime;
@@ -313,6 +325,8 @@ public class Simulator {
 					long travelTime = map.travelTimeBetween(agent.loc, ((ResourceEvent) event).pickupLoc);
 					arriveTime= travelTime +agent.time;
 				}
+
+				arriveTime=toTriggerTime;
 				if( arriveTime<((ResourceEvent) event).expirationTime)
 				{
 					currentBenefit.put(event.id,benefit);
@@ -534,9 +548,15 @@ public class Simulator {
 				events.add(ag);
 				assignedAgents.add(ag);
 
+				long distance=map.travelDistanceBetween(ag.loc,((ResourceEvent) ev).pickupLoc);
+				long tripDistance=map.travelDistanceBetween(((ResourceEvent) ev).pickupLoc,((ResourceEvent) ev).dropoffLoc);
+				double benefitAssigned= (double)tripDistance/(tripDistance + distance);
+				if(benefitAssigned==NaN)
+					benefitAssigned=0;
+				totalBenefit+=benefitAssigned;
 
 				long cruiseTime = ag.time - ag.startSearchTime;
-				long approachTime = earliest - ag.time;
+				long approachTime = earliest - toTriggerTime;
 				long searchTime = cruiseTime + approachTime;
 				long waitTime = earliest - ev.availableTime;
 
@@ -597,15 +617,28 @@ public class Simulator {
 		endPooltime=initialPoolTime+TimeUnit.SECONDS.toSeconds(assignmentPeriod);
 		System.out.println("Difference:"+(endPooltime-initialPoolTime));
 		ScoreInfo score = new ScoreInfo();
+		DateTimeFormatter dtf = DateTimeFormatter.ofPattern("HH:mm:ss");
+		LocalDateTime now = LocalDateTime.now();
+		LocalDateTime after5mins=LocalDateTime.now().plusMinutes(5);
+		System.out.println(dtf.format(now));
 		if (map == null) {
 			System.out.println("map is null at beginning of run");
 		}
+		long toTriggerTime;
 		try//(ProgressBar pb = new ProgressBar("Progress:", 100, ProgressBarStyle.ASCII) )
 		{
 			long beginTime = events.peek().time;
 			while (events.peek().time <= simulationEndTime) {
-				Event toTrigger = events.poll();
+				/*
+				LocalDateTime now_now = LocalDateTime.now();
 
+				if(now_now.isAfter(after5mins) ){
+					System.out.println("***Broken after 5 mins!!");
+					break;
+				}
+				 */
+				Event toTrigger = events.poll();
+				toTriggerTime=toTrigger.time;
 				//pb.stepTo((long)(((float)(toTrigger.time - beginTime)) / (simulationEndTime - beginTime) * 100.0));
 				if(toTrigger.getClass()==ResourceEvent.class && ((ResourceEvent) toTrigger).eventCause==0)
 					fresh++;
@@ -618,14 +651,13 @@ public class Simulator {
 
 					pool++;
 					System.out.println("Pooling:"+pool+" "+"fresh resources:"+fresh+" expired:"+expiredResources +" empty agents:"+emptyAgents.size());
-					stableMarriage();
+					stableMarriage(toTriggerTime);
 					AgentEvent.agentList.clear();
 					//ResourceEvent.resList.clear();
 					initialPoolTime=initialPoolTime+ TimeUnit.SECONDS.toSeconds(assignmentPeriod);
 					endPooltime=initialPoolTime+TimeUnit.SECONDS.toSeconds(assignmentPeriod);
 					fresh=0;
 				}
-
 				Event e = toTrigger.trigger();
 				if(events.contains(e))
 						System.out.println("Duplicate event!"+e.id);
@@ -633,7 +665,7 @@ public class Simulator {
 				if (e != null) {
 					events.add(e);
 				}
-
+				//System.out.println("benefit:"+totalBenefit);
 			}
 
 		} catch (Exception e) {
@@ -743,9 +775,9 @@ public class Simulator {
 				sb.append("average resource wait time: " + Math.floorDiv(totalResourceWaitTime, totalResources) + " seconds \n");
 				sb.append("resource expiration percentage: " + Math.floorDiv(expiredResources * 100, totalResources) + "%\n");
 				sb.append("\n");
-				sb.append("average agent cruise time: " + Math.floorDiv(totalAgentCruiseTime, totalAssignments) + " seconds \n");
-				sb.append("average agent approach time: " + Math.floorDiv(totalAgentApproachTime, totalAssignments) + " seconds \n");
-				sb.append("average resource trip time: " + Math.floorDiv(totalResourceTripTime, totalAssignments) + " seconds \n");
+				//sb.append("average agent cruise time: " + Math.floorDiv(totalAgentCruiseTime, totalAssignments) + " seconds \n");
+				//sb.append("average agent approach time: " + Math.floorDiv(totalAgentApproachTime, totalAssignments) + " seconds \n");
+				sb.append("total benefit: " + totalBenefit + "\n");
 				sb.append("total number of assignments: " + totalAssignments + "\n");
 			} else {
 				sb.append("No resources.\n");
