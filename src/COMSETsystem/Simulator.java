@@ -3,6 +3,7 @@ package COMSETsystem;
 import MapCreation.*;
 
 import java.io.File;
+import java.math.RoundingMode;
 import java.text.NumberFormat;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
@@ -549,9 +550,19 @@ public class Simulator {
 				long distance=map.travelDistanceBetween(ag.loc,((ResourceEvent) ev).pickupLoc);
 				long tripDistance=map.travelDistanceBetween(((ResourceEvent) ev).pickupLoc,((ResourceEvent) ev).dropoffLoc);
 				double benefitAssigned= (double)tripDistance/(tripDistance + distance);
+
 				if(benefitAssigned==NaN)
 					benefitAssigned=0;
+
+				DecimalFormat df = new DecimalFormat("#.###");
+				df.setRoundingMode(RoundingMode.CEILING);
+				//df.format(benefitAssigned);
+				benefitAssigned=Math.round(benefitAssigned*100);
+				benefitAssigned=benefitAssigned/100;
 				totalBenefit+=benefitAssigned;
+				//df.format(totalBenefit);
+
+				System.out.println("The benefit that has been assigned is: "+benefitAssigned+totalBenefit);
 
 				long cruiseTime = ag.time - ag.startSearchTime;
 				long approachTime = earliest - toTriggerTime;

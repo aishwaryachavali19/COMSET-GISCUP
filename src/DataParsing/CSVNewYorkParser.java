@@ -80,8 +80,8 @@ public class CSVNewYorkParser {
 			// and save the 4 tokens of each line in the corresponding field of the TimestampAgRe object
 			int counter=1;
 			while (sc.hasNext()) {
-				if(counter>1000)
-					break;
+				/*if(counter>1000)
+					break;*/
 				sc.next();// skip first VendorID
 				long time = dateConversion(sc.next());
 				sc.next();// skip these fields
