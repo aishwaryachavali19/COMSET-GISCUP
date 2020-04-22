@@ -766,11 +766,13 @@ public class Simulator {
 			System.out.println("Bounding polygon KML file: " + boundingPolygonKMLFile);
 			System.out.println("Number of agents: " + totalAgents);
 			System.out.println("Number of resources: " + totalResources);
+			System.out.println("Average benefit(per cab):"+totalBenefit/totalResources);
 			System.out.println("Assignment Period: "+assignmentPeriod);
 			System.out.println("Resource Maximum Life Time: " + ResourceMaximumLifeTime + " seconds");
 			System.out.println("Agent class: " + agentClass.getName());
 			System.out.println("Expired resources:"+expiredResources);
 			System.out.println("\n***Statistics***");
+
 
 			if (totalResources != 0) {
 				// Collect the "search" time for the agents that are empty at the end of the simulation.
@@ -789,6 +791,7 @@ public class Simulator {
 				//sb.append("average agent approach time: " + Math.floorDiv(totalAgentApproachTime, totalAssignments) + " seconds \n");
 				sb.append("total benefit: " + totalBenefit + "\n");
 				sb.append("total number of assignments: " + totalAssignments + "\n");
+				sb.append("Average benefit per cab:"+totalBenefit/totalResources);
 			} else {
 				sb.append("No resources.\n");
 			}
