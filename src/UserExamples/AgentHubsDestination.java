@@ -61,7 +61,7 @@ public class AgentHubsDestination extends BaseAgent {
 
 		rnd = new Random(10);
 		if (allHubs.size() == 0) {
-			for(int i=0; i<10; i++) {
+			for(int i=0; i<40; i++) {
 				int hubIndex = rnd.nextInt(map.intersections().size());
 				Intersection[] intersectionArray = map.intersections().values().toArray(new Intersection[map.intersections().size()]);
 				Intersection hub = intersectionArray[hubIndex];
@@ -116,6 +116,7 @@ public class AgentHubsDestination extends BaseAgent {
 	public void assignedTo(LocationOnRoad currentLocation, long currentTime, long resourceId, LocationOnRoad resourcePikcupLocation, LocationOnRoad resourceDropoffLocation) {
 		// Clear the current route.
 		route.clear();
+//		System.out.println("in assignedTo");
 //
 //		Logger.getLogger(this.getClass().getName()).log(Level.INFO, "Agent " + this.id + " assigned to resource " + resourceId);
 //		Logger.getLogger(this.getClass().getName()).log(Level.INFO, "currentLocation = " + currentLocation);

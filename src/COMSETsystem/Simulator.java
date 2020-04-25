@@ -3,6 +3,8 @@ package COMSETsystem;
 import MapCreation.*;
 
 import java.text.NumberFormat;
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.*;
 import java.util.concurrent.TimeUnit;
 import UserExamples.HungarianNew;
@@ -99,8 +101,11 @@ public class Simulator {
 	// a user's debugging purposes.
 	ArrayList<BaseAgent> agents;
 
+	protected long triggerTime = Long.MAX_VALUE;
+
 	protected long initialPoolTime;
 	protected long endPooltime=0;
+	protected long poolTime=30;
 
 	protected List<AgentEvent> assignedAgents = new ArrayList<>();
 
@@ -166,7 +171,7 @@ public class Simulator {
 		map.calcTravelTimes();
 
 		//// Pre-compute shortest distance between all pairs of intersections.
-		System.out.println("Pre-computing all pair travel distance...");
+		System.out.println("Pre-computing all pair travel distances...");
 		map.calcTravelDistances();
 
 		// Make a map copy for agents to use so that an agent cannot modify the map used by
@@ -176,7 +181,7 @@ public class Simulator {
 		MapWithData mapWD = new MapWithData(map, this.resourceFile, agentPlacementRandomSeed);
 
 		// map match resources
-		System.out.println("Loading and map-matching resources..." + numberOfPools);
+//		System.out.println("Loading and map-matching resources..." + numberOfPools);
 		long latestResourceTime = mapWD.createMapWithData(this);
 		initialPoolTime = mapWD.earliestResourceTime;
 
@@ -194,7 +199,7 @@ public class Simulator {
 	 */
 
 	//Snehal
-	public void createCostMatrix(){
+	public void createCostMatrix(long triggerTime){
 		//assignedAgents = new ArrayList<>();
 		List<List<Double>> costMatrix = new ArrayList<List<Double>>();//For cost matrix
 		List<Double> resAgent = new ArrayList<>(); //Resource to agent benefits
@@ -208,6 +213,7 @@ public class Simulator {
 		HashMap<ResourceEvent, Map<AgentEvent, Long>> ResAgentArriveTime= new HashMap<>();//Store resource to agent locationOnRoad
 		Map<AgentEvent,Long> agentArriveTime = new HashMap<>();
 		int id=0;
+
 		for(ResourceEvent event:ResourceEvent.resList){
 				//events.remove(event);
 				agentInResList = new ArrayList<>();//Snehal
@@ -225,17 +231,19 @@ public class Simulator {
 				for (AgentEvent agent : emptyAgents) {
 
 					if (event.isFresh) {
-						long travelTimeToEndIntersection = agent.time - ((ResourceEvent) event).time;
+						long travelTimeToEndIntersection = agent.time - triggerTime;
 						long travelTimeFromStartIntersection = agent.loc.road.travelTime - travelTimeToEndIntersection;
 						agentLocationOnRoad = new LocationOnRoad(agent.loc.road, travelTimeFromStartIntersection);
 						//Store the locationOnRoad of the agent in the map
 						travelTime = map.travelTimeBetween(agentLocationOnRoad, ((ResourceEvent) event).pickupLoc);
-						arriveTime = travelTime + agent.time;
+//						arriveTime = travelTime + triggerTime;
+						arriveTime = triggerTime;
 					}
 					else {
 						agentLocationOnRoad = agent.loc;
 						travelTime = map.travelTimeBetween(agentLocationOnRoad, ((ResourceEvent) event).pickupLoc);
-						arriveTime = travelTime + agent.time;
+//						arriveTime = travelTime + triggerTime;
+						arriveTime = triggerTime;
 					}
 
 					//New distance for benefits
@@ -244,7 +252,7 @@ public class Simulator {
 					double benefit= (double)tripDistance/(tripDistance + distance);
 					//totalBenefit += benefit;
 
-					if(arriveTime <= ((ResourceEvent) event).expirationTime)
+					if(arriveTime < ((ResourceEvent) event).expirationTime)
 					{
 						resAgent.add(benefit);
 						agentInResList.add(agent);
@@ -262,11 +270,11 @@ public class Simulator {
 				}
 				if (Collections.frequency(resAgent, 0.0) == resAgent.size())
 				{
-					events.remove(((ResourceEvent) event));
-					waitingResources.remove(((ResourceEvent) event));
-					event.setExpirationEvent(((ResourceEvent) event).availableTime + ResourceMaximumLifeTime, ResourceEvent.EXPIRED);
+//					events.remove(((ResourceEvent) event));
+//					waitingResources.remove(((ResourceEvent) event));
+//					event.setExpirationEvent(((ResourceEvent) event).availableTime + ResourceMaximumLifeTime, ResourceEvent.EXPIRED);
 					waitingResources.add(((ResourceEvent) event));
-					events.add(((ResourceEvent) event));
+//					events.add(((ResourceEvent) event));
 					event.isFresh = false;
 					continue;
 				}
@@ -281,13 +289,13 @@ public class Simulator {
 
 			//totalPools++;
 
-			System.out.println("##Hungarian - Agent in resource list" + agentInResList.size());
-			System.out.println("##Hungarian - resource agent " + resAgent.size());
-			System.out.println("##Costmatrix - " + costMatrix.size());
-			System.out.println("Final matrix size " + costMatrix.size());
+//			System.out.println("##Hungarian - Agent in resource list" + agentInResList.size());
+//			System.out.println("##Hungarian - resource agent " + resAgent.size());
+//			System.out.println("##Costmatrix - " + costMatrix.size());
+//			System.out.println("Final matrix size " + costMatrix.size());
 			double[][] array = costMatrix.stream().map(l -> l.stream().mapToDouble(i -> i).toArray()).toArray(double[][]::new);
 			int[][] assignment = HungarianNew.getAssignment(array, "max");
-			System.out.println("After Hungarian assigns\n");
+//			System.out.println("After Hungarian assigns\n");
 			//double cost = HungarianAlgorithm.hgAlgorithm(array, "max");
 			//System.out.println("cost" + cost);
 			long prevResId = -1, prevAgentId = -1;
@@ -302,11 +310,11 @@ public class Simulator {
 					AgentEvent bestAgent = null;
 					if(array.length>array[0].length)
 					{
-						//if(array[assignment[i][1]][assignment[i][0]] !=0.0) {
+						if(array[assignment[i][1]][assignment[i][0]] !=0.0) {
 							resEvent = IdResource.get(assignment[i][1]);
 							List<AgentEvent> ag = IdAgent.get(assignment[i][1]);
 							bestAgent = ag.get(assignment[i][0]);
-							System.out.println("Resource Id " + resEvent.id + " assigned to " + "Agent Id " + ag.get(assignment[i][0]).id + " Benefit " + array[assignment[i][1]][assignment[i][0]]);
+//							System.out.println("Resource Id " + resEvent.id + " assigned to " + "Agent Id " + ag.get(assignment[i][0]).id + " Benefit " + array[assignment[i][1]][assignment[i][0]]);
 							totalBenefit += array[assignment[i][1]][assignment[i][0]];
 							waitingResources.remove(resEvent);
 							ResourceEvent.resList.remove(resEvent);
@@ -322,8 +330,8 @@ public class Simulator {
 							long agentArrival = ResAgentArriveTime.get(resEvent).get(bestAgent);
 							bestAgent.setEvent(agentArrival + resEvent.tripTime, resEvent.dropoffLoc, AgentEvent.DROPPING_OFF);
 							events.add(bestAgent);
-							long cruiseTime = bestAgent.time - bestAgent.startSearchTime;
-							long approachTime = agentArrival - bestAgent.time;
+							long cruiseTime = triggerTime - bestAgent.startSearchTime;
+							long approachTime = agentArrival - triggerTime;
 							long searchTime = cruiseTime + approachTime;
 							long waitTime = agentArrival - resEvent.availableTime;
 							totalAgentCruiseTime += cruiseTime;
@@ -331,16 +339,16 @@ public class Simulator {
 							totalAgentSearchTime += searchTime;
 							totalResourceWaitTime += waitTime;
 							totalAssignments++;
-						//}
+						}
 					}
 					else{
-  						//if(array[assignment[i][0]][assignment[i][1]] != 0.0) {
+  						if(array[assignment[i][0]][assignment[i][1]] != 0.0) {
 
 
 							resEvent = IdResource.get(assignment[i][0]);
 							List<AgentEvent> ag = IdAgent.get(assignment[i][0]);
 							bestAgent = ag.get(assignment[i][1]);
-							System.out.println("Resource Id " + resEvent.id + " assigned to " + "Agent Id " + ag.get(assignment[i][1]).id + " Benefit " + array[assignment[i][0]][assignment[i][1]]);
+//							System.out.println("Resource Id " + resEvent.id + " assigned to " + "Agent Id " + ag.get(assignment[i][1]).id + " Benefit " + array[assignment[i][0]][assignment[i][1]]);
 							totalBenefit += array[assignment[i][0]][assignment[i][1]];
 							waitingResources.remove(resEvent);
 							ResourceEvent.resList.remove(resEvent);
@@ -356,8 +364,8 @@ public class Simulator {
 							long agentArrival = ResAgentArriveTime.get(resEvent).get(bestAgent);
 							bestAgent.setEvent(agentArrival + resEvent.tripTime, resEvent.dropoffLoc, AgentEvent.DROPPING_OFF);
 							events.add(bestAgent);
-							long cruiseTime = bestAgent.time - bestAgent.startSearchTime;
-							long approachTime = agentArrival - bestAgent.time;
+							long cruiseTime = triggerTime - bestAgent.startSearchTime;
+							long approachTime = agentArrival - triggerTime;
 							long searchTime = cruiseTime + approachTime;
 							long waitTime = agentArrival - resEvent.availableTime;
 							totalAgentCruiseTime += cruiseTime;
@@ -365,7 +373,7 @@ public class Simulator {
 							totalAgentSearchTime += searchTime;
 							totalResourceWaitTime += waitTime;
 							totalAssignments++;
-						//}
+						}
 					}
 
 				//}
@@ -373,12 +381,12 @@ public class Simulator {
 		}
 		for(ResourceEvent event:ResourceEvent.resList)
 		{
-			events.remove(((ResourceEvent) event));
-			waitingResources.remove(((ResourceEvent) event));
-			event.setExpirationEvent(((ResourceEvent) event).availableTime + ResourceMaximumLifeTime, ResourceEvent.EXPIRED);
+//			events.remove(((ResourceEvent) event));
+//			waitingResources.remove(((ResourceEvent) event));
+//			event.setExpirationEvent(((ResourceEvent) event).availableTime + ResourceMaximumLifeTime, ResourceEvent.EXPIRED);
 			waitingResources.add(((ResourceEvent) event));
 			event.isFresh = false;
-			events.add(((ResourceEvent) event));
+//			events.add(((ResourceEvent) event));
 		}
 	}
 
@@ -393,9 +401,12 @@ public class Simulator {
 		Event tocheck=null;
 		int resources=0;
 		System.out.println("Running the simulation...");
-		initialPoolTime=initialPoolTime+ TimeUnit.SECONDS.toSeconds(60);
-		endPooltime=initialPoolTime+ TimeUnit.SECONDS.toSeconds(60);
+		initialPoolTime=initialPoolTime+ TimeUnit.SECONDS.toSeconds(poolTime);
+		endPooltime=initialPoolTime+ TimeUnit.SECONDS.toSeconds(poolTime);
 		ScoreInfo score = new ScoreInfo();
+		DateTimeFormatter dtf = DateTimeFormatter.ofPattern("HH:mm:ss");
+		LocalDateTime now = LocalDateTime.now();
+		LocalDateTime after5mins =LocalDateTime.now().plusMinutes(5);
 		if (map == null) {
 			System.out.println("map is null at beginning of run");
 		}
@@ -403,21 +414,26 @@ public class Simulator {
 			long beginTime = events.peek().time;
 			while (events.peek().time <= simulationEndTime) {
 				Event toTrigger = events.poll();
-
+				triggerTime = toTrigger.time;
+				LocalDateTime now_now = LocalDateTime.now();
+				if(now_now.isAfter(after5mins) ){
+					System.out.println("BROKEN AFTER 5 mins");
+					break;
+				}
 				if(toTrigger.getClass()==ResourceEvent.class){
 					resources++;
 				}
 				pb.stepTo((long)(((float)(toTrigger.time - beginTime)) / (simulationEndTime - beginTime) * 100.0));
-				if((toTrigger.getClass()==ResourceEvent.class && toTrigger.time>=initialPoolTime && toTrigger.time<endPooltime) || (resources==CSVNewYorkParser.totalNoOfResources && toTrigger.getClass()==ResourceEvent.class)) {
+				if((toTrigger.getClass()==ResourceEvent.class && toTrigger.time>=initialPoolTime)) {
 					if(ResourceEvent.resList.isEmpty()) {
 						continue;
 					}
-					System.out.println("\nnumber of pools: " + numberOfPools + "\n");
+//					System.out.println("\nnumber of pools: " + numberOfPools + "\n");
 					numberOfPools++;
-					createCostMatrix();
+					createCostMatrix(triggerTime);
 					AgentEvent.agentList.clear();
-					initialPoolTime=initialPoolTime+ TimeUnit.SECONDS.toSeconds(60);
-					endPooltime=initialPoolTime+ TimeUnit.SECONDS.toSeconds(60);
+					initialPoolTime=initialPoolTime+ TimeUnit.SECONDS.toSeconds(poolTime);
+					endPooltime=initialPoolTime+ TimeUnit.SECONDS.toSeconds(poolTime);
 				}
 				Event e = toTrigger.trigger();
 				if (e != null) {
@@ -505,8 +521,6 @@ public class Simulator {
 			long endTime = System.nanoTime();
 			long totalTime = (endTime - startTime) / 1000000000;
 
-			System.out.println("\nrunning time: " + totalTime);
-
 			System.out.println("\n***Simulation environment***");
 			System.out.println("JSON map file: " + mapJSONFile);
 			System.out.println("Resource dataset file: " + resourceFile);
@@ -514,6 +528,7 @@ public class Simulator {
 			System.out.println("Number of agents: " + totalAgents);
 			System.out.println("Number of resources: " + totalResources);
 			System.out.println("Resource Maximum Life Time: " + ResourceMaximumLifeTime + " seconds");
+			System.out.println("Assignment period: " + poolTime + " seconds");
 			System.out.println("Agent class: " + agentClass.getName());
 
 			System.out.println("\n***Statistics***");
@@ -527,19 +542,24 @@ public class Simulator {
 				for (AgentEvent ae: emptyAgents) {
 					totalRemainTime += (simulationEndTime - ae.startSearchTime);
 				}
-				sb.append("Total simulation time: " + totalTime + " seconds \n");
-				sb.append("average agent search time: " + Math.floorDiv(totalAgentSearchTime + totalRemainTime, (totalAssignments + emptyAgents.size())) + " seconds \n");
-				sb.append("average resource wait time: " + Math.floorDiv(totalResourceWaitTime, totalResources) + " seconds \n");
-				sb.append("resource expiration percentage: " + ((float)(expiredResources * 100) /totalResources) + " %\n");
-				sb.append("\n");
-				sb.append("Expired resources " + expiredResources);sb.append("\n");
-				sb.append("Resources in reslist " + ResourceEvent.resList.size());sb.append("\n");
+//				sb.append("Resources in reslist " + ResourceEvent.resList.size());sb.append("\n");
 //				sb.append("average agent cruise time: " + Math.floorDiv(totalAgentCruiseTime, totalAssignments) + " seconds \n");
 //				sb.append("average agent approach time: " + Math.floorDiv(totalAgentApproachTime, totalAssignments) + " seconds \n");
 //				sb.append("average resource trip time: " + Math.floorDiv(totalResourceTripTime, totalAssignments) + " seconds \n");
-				sb.append("total number of assignments: " + totalAssignments + "\n");
-				sb.append("total resouces: " + totalResources + "\n");
+				sb.append("Number of pools " + numberOfPools + "\n");
+				sb.append("Number of assignments: " + totalAssignments + "\n");
+				sb.append("Number of resources: " + totalResources + "\n");
+				sb.append("Expired/Dropped resources " + expiredResources + "\n");
 				sb.append("Total Benefit: " + totalBenefit + "\n");
+				sb.append("Average Benefit per pool: " + (totalBenefit/numberOfPools) + "\n");
+				sb.append("Average Benefit per taxi/assignment: " + (totalBenefit/totalAgents) + "\n\n");
+
+				sb.append("Average agent search time: " + Math.floorDiv(totalAgentSearchTime + totalRemainTime, (totalAssignments + emptyAgents.size())) + " seconds \n");
+				sb.append("The percentage of dropped requests: " + ((float)(expiredResources * 100) /totalResources) + " %\n");
+				sb.append("Average resource wait time: " + Math.floorDiv(totalResourceWaitTime, totalResources) + " seconds \n");
+				sb.append("Running time of the simulation: " + totalTime + " seconds\n");
+
+
 
 			} else {
 				sb.append("No resources.\n");

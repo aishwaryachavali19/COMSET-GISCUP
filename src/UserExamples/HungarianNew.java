@@ -498,7 +498,7 @@ public class HungarianNew {
         //</UNCOMMENT>
 
         if (optimal.length > optimal[0].length) {
-            System.out.println("Array transposed (because rows>columns).\n");	//Cols must be >= Rows.
+//            System.out.println("Array transposed (because rows>columns).\n");	//Cols must be >= Rows.
             optimal = transpose(optimal);
         }
 
