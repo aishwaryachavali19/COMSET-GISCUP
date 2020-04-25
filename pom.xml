@@ -4,9 +4,13 @@
     <groupId>simulation</groupId>
     <artifactId>COMSET</artifactId>
     <version>1.0</version>
-    <modules>
-        <module>Main</module>
-    </modules>
+    <profiles>
+        <profile>
+            <modules>
+                <module>Main</module>
+            </modules>
+        </profile>
+    </profiles>
     <packaging>pom</packaging>
     <properties>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
