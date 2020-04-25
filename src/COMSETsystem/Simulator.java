@@ -766,7 +766,7 @@ public class Simulator {
 			System.out.println("Bounding polygon KML file: " + boundingPolygonKMLFile);
 			System.out.println("Number of agents: " + totalAgents);
 			System.out.println("Number of resources: " + totalResources);
-			System.out.println("Average benefit(per cab):"+totalBenefit/totalResources);
+			System.out.println("Average benefit(per cab):"+totalBenefit/totalAgents);
 			System.out.println("Assignment Period: "+assignmentPeriod);
 			System.out.println("Resource Maximum Life Time: " + ResourceMaximumLifeTime + " seconds");
 			System.out.println("Agent class: " + agentClass.getName());
@@ -791,7 +791,7 @@ public class Simulator {
 				//sb.append("average agent approach time: " + Math.floorDiv(totalAgentApproachTime, totalAssignments) + " seconds \n");
 				sb.append("total benefit: " + totalBenefit + "\n");
 				sb.append("total number of assignments: " + totalAssignments + "\n");
-				sb.append("Average benefit per cab:"+totalBenefit/totalResources);
+				sb.append("Average benefit per cab:"+totalBenefit/totalAgents);
 			} else {
 				sb.append("No resources.\n");
 			}
