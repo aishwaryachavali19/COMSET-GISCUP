@@ -106,7 +106,7 @@ public class Simulator {
 	protected long initialPoolTime;
 	protected long endPooltime=0;
 	protected long poolTime=30;
-
+	protected long assignmentPeriod; //assignment period
 	protected List<AgentEvent> assignedAgents = new ArrayList<>();
 
 	// A class that extends BaseAgent and implements a search routing strategy
@@ -146,7 +146,7 @@ public class Simulator {
 	 * @param agentPlacementRandomSeed The see for the random number of generator when placing the agents
 	 * @param speedReduction The speed reduction to accommodate traffic jams and turn delays
 	 */
-	public void configure(String mapJSONFile, String resourceFile, Long totalAgents, String boundingPolygonKMLFile, Long maximumLifeTime, long agentPlacementRandomSeed, double speedReduction) {
+	public void configure(String mapJSONFile, String resourceFile, Long totalAgents, String boundingPolygonKMLFile, Long maximumLifeTime, long agentPlacementRandomSeed, double speedReduction,long assignmentPeriod) {
 
 		this.mapJSONFile = mapJSONFile;
 
@@ -157,6 +157,7 @@ public class Simulator {
 		this.ResourceMaximumLifeTime = maximumLifeTime;
 
 		this.resourceFile = resourceFile;
+		this.assignmentPeriod=assignmentPeriod;
 
 		MapCreator creator = new MapCreator(this.mapJSONFile, this.boundingPolygonKMLFile, speedReduction);
 		System.out.println("Creating the map...");
@@ -401,8 +402,8 @@ public class Simulator {
 		Event tocheck=null;
 		int resources=0;
 		System.out.println("Running the simulation...");
-		initialPoolTime=initialPoolTime+ TimeUnit.SECONDS.toSeconds(poolTime);
-		endPooltime=initialPoolTime+ TimeUnit.SECONDS.toSeconds(poolTime);
+		initialPoolTime=initialPoolTime+ TimeUnit.SECONDS.toSeconds(assignmentPeriod);
+		endPooltime=initialPoolTime+ TimeUnit.SECONDS.toSeconds(assignmentPeriod);
 		ScoreInfo score = new ScoreInfo();
 		DateTimeFormatter dtf = DateTimeFormatter.ofPattern("HH:mm:ss");
 		LocalDateTime now = LocalDateTime.now();
@@ -432,8 +433,8 @@ public class Simulator {
 					numberOfPools++;
 					createCostMatrix(triggerTime);
 					AgentEvent.agentList.clear();
-					initialPoolTime=initialPoolTime+ TimeUnit.SECONDS.toSeconds(poolTime);
-					endPooltime=initialPoolTime+ TimeUnit.SECONDS.toSeconds(poolTime);
+					initialPoolTime=initialPoolTime+ TimeUnit.SECONDS.toSeconds(assignmentPeriod);
+					endPooltime=initialPoolTime+ TimeUnit.SECONDS.toSeconds(assignmentPeriod);
 				}
 				Event e = toTrigger.trigger();
 				if (e != null) {
@@ -528,7 +529,7 @@ public class Simulator {
 			System.out.println("Number of agents: " + totalAgents);
 			System.out.println("Number of resources: " + totalResources);
 			System.out.println("Resource Maximum Life Time: " + ResourceMaximumLifeTime + " seconds");
-			System.out.println("Assignment period: " + poolTime + " seconds");
+			System.out.println("Assignment period: " + assignmentPeriod + " seconds");
 			System.out.println("Agent class: " + agentClass.getName());
 
 			System.out.println("\n***Statistics***");
