@@ -8,7 +8,7 @@ To run the project for Optimal assignment, clone the branch "OptimalAssignment_A
 
 git clone -b OptimalAssignment_Autonomous https://github.com/sanava2010/COMSET-GISCUP.git
 
-General instructions for running COMSET:
+General instructions for running COMSET can be found in the following sections
 
 # COMSET
 
