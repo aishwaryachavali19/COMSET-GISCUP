@@ -1,3 +1,13 @@
+# Instructions to run the code
+Our project implements two algorithms:
+To run the project for Fair assignment, clone the branch "FairAssignment".
+git clone -b FairAssignment https://github.com/sanava2010/COMSET-GISCUP.git
+
+To run the project for Optimal assignment, clone the branch "OptimalAssignment_Autonomous" to download the code.
+git clone -b OptimalAssignment_Autonomous https://github.com/sanava2010/COMSET-GISCUP.git
+
+General instructions for running COMSET:
+
 # COMSET
 
 This project provides the COMSET simulator described in the <a href="https://sigspatial2019.sigspatial.org/giscup2019/problem"> 2019 GISCUP Problem Definition</a>. COMSET simulates crowdsourced taxicabs (called <i>agents</i>) searching for customers (called <i>resources</i>) to pick up in a city. The simulator serves as a standard testbed such that CUP contestants can develop and test their own search algorithms. It will also be the testbed for the evaluation of submissions.
