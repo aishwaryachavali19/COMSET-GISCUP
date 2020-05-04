@@ -3,6 +3,7 @@ package COMSETsystem;
 import MapCreation.*;
 
 import java.io.File;
+import java.math.RoundingMode;
 import java.text.NumberFormat;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
@@ -192,7 +193,7 @@ public class Simulator {
 		// Deploy agents at random locations of the map.
 		System.out.println("Randomly placing " + this.totalAgents + " agents on the map...");
 		agents = mapWD.placeAgentsRandomly(this);
-		System.out.println("get events");
+		//System.out.println("get events");
 
 		// Initialize the event queue.
 		events = mapWD.getEvents();
@@ -215,7 +216,7 @@ public class Simulator {
 
 		HashMap<Long,ResourceEvent>mapResIdToResEvents=new HashMap<>();
 		HashMap<Long,HashMap<Long,Long> > resAgentArriveTime= new HashMap<Long, HashMap<Long,Long>>();
-		System.out.println("Resources:"+ResourceEvent.resList.size());
+		//System.out.println("Resources:"+ResourceEvent.resList.size());
 		long min= Long.MAX_VALUE;
 		for(ResourceEvent event : ResourceEvent.resList)
 		{
@@ -238,7 +239,7 @@ public class Simulator {
 				// Thus the assumption is still true.
 				long arriveTime;
 				LocationOnRoad agentLocationOnRoad;
-				//This makes no sense!!
+
 
 				if(event.fresh)
 				{
@@ -261,7 +262,7 @@ public class Simulator {
 					currentArrivalTime.put(agent.id,arriveTime);
 					mapResAgentLoc.put(agent.id,agentLocationOnRoad);
 					mapResAgentArrivalTime.put(agent.id,arriveTime);
-					//System.out.println("Added to customer pref list.");
+
 				}
 
 
@@ -270,7 +271,6 @@ public class Simulator {
 			resAgentArriveTime.put(event.id,mapResAgentArrivalTime);
 			PriorityQueue<Map.Entry<Long, Long>> pq = new PriorityQueue<>((a,b) -> a.getValue()>b.getValue()?1:-1);
 			pq.addAll(currentArrivalTime.entrySet());
-			//currentArrivalTime.clear();
 			ArrayList<Long> aList=new ArrayList<Long>();
 			int limit=pq.size();
 			for(int i=0;i<limit;i++)
@@ -278,26 +278,22 @@ public class Simulator {
 				if(pq.isEmpty())
 					break;
 				Map.Entry<Long,Long> e=pq.poll();
-				//currentArrivalTime.put(e.getKey(),e.getValue());
 				aList.add(e.getKey());
 			}
-			//resPrefList.put(event.id,currentArrivalTime);
+
 			if(aList.size()!=0)
 				resPrefList.put(event.id,aList);
 			else
 			{
 				resMatches.remove(event.id);
 
-				//waitingResources.add(event);
-				//event.fresh=false;
-
 			}
 
 		}
-		System.out.println("Customer pref list calculated.");
+		//System.out.println("Customer pref list calculated.");
 		//Calculate the preference list for agents
 		int temp_free=0;
-		//HashMap<Long,HashMap<Long,Double> > agentPrefList= new HashMap<Long, HashMap<Long,Double>>();
+
 		HashMap<Long, ArrayList<Long>> agentPrefList= new HashMap<Long, ArrayList<Long>>();
 		for(AgentEvent agent: emptyAgents)
 		{
@@ -355,72 +351,10 @@ public class Simulator {
 			}
 
 		}
-		System.out.println("Agents with no pref lists:"+temp_free);
-
-		/*
-		//To print agent preference list along with the benefit
-		System.out.println("Agent pref list:");
-		for(HashMap<Long,Double> innerList : agentPrefList.values()) {
-
-			for(Long number : innerList.keySet()) {
-				System.out.print(number+":" +innerList.get(number)+",");
-			}
-			System.out.println();
-		}
-		*/
-		//Agent preference list with only resource IDs
-		//System.out.println("Agent pref list:");
-
-		/*for(Long key: agentPrefList.keySet()){
-			//ArrayList<Long> innerList = agentPrefList.get(key);
-			System.out.println("Keys:"+key);
-		}*/
-		/*
-		//agent IDs for pref list
-		int j=1;
-		ArrayList<Long> agentKeys = new ArrayList<>();
-		for(Long key: agentPrefList.keySet()) {
-			agentKeys.add(key);
-		}
-		//Printing
-		for(ArrayList<Long> innerList : agentPrefList.values()) {
-				if(!innerList.isEmpty()) {
-					//System.out.println("inside !innerList.isEmpty()"+"  agentKeys.size():"+agentKeys.size() +"agentPreflist.size():"+agentPrefList.size() );
-					if(j<agentKeys.size()) {
-						//System.out.println("inside !j<agentKeys.size()");
-						System.out.println("Agent:" + agentKeys.get(j++));
-					}
-					for (Long number : innerList) {
-						System.out.print(number + ",");
-					}
-
-					System.out.println();
-				}
-		}
-		 */
-		/*
-		//To print resource preference list along with waiting time. Need to change code a little to get the required o/p
-		System.out.println("\n\nResource pref list:");
-		for(HashMap<Long,Long> innerList : resPrefList.values()) {
-
-			for(Long number : innerList.keySet()) {
-				System.out.print(number+":" +innerList.get(number)+",");
-			}
-			System.out.println();
-		}
+		//System.out.println("Agents with no pref lists:"+temp_free);
 
 
-		//Resource preference list with only agent IDs
-		System.out.println("\n\nResource pref list:");
-		for(ArrayList<Long> innerList : resPrefList.values()) {
-
-			for(Long number : innerList) {
-				System.out.print(number+",");
-			}
-			System.out.println();
-		}
-		*/
-		System.out.println("Agent pref list calculated. Running stable marriage.");
+		//System.out.println("Agent pref list calculated. Running stable marriage.");
 
 		//Stable Matching algorithm
 		int freeRes=resMatches.size();
@@ -433,7 +367,7 @@ public class Simulator {
 				int maxSize=resPrefList.get(resId).size();
 				if(maxSize==0) //The resource has no preference list and hence should be expired.
 				{
-					System.out.println("No pref list!");
+					//System.out.println("No pref list!");
 					freeRes--;
 					continue;
 				}
@@ -549,6 +483,11 @@ public class Simulator {
 				long distance=map.travelDistanceBetween(ag.loc,((ResourceEvent) ev).pickupLoc);
 				long tripDistance=map.travelDistanceBetween(((ResourceEvent) ev).pickupLoc,((ResourceEvent) ev).dropoffLoc);
 				double benefitAssigned= (double)tripDistance/(tripDistance + distance);
+				DecimalFormat df = new DecimalFormat("#.###");
+				df.setRoundingMode(RoundingMode.CEILING);
+				//df.format(benefitAssigned);
+				benefitAssigned=Math.round(benefitAssigned*100);
+				benefitAssigned=benefitAssigned/100;
 				if(benefitAssigned==NaN)
 					benefitAssigned=0;
 				totalBenefit+=benefitAssigned;
@@ -583,18 +522,10 @@ public class Simulator {
 			}
 		}
 
-		System.out.println("The number of resources matched:"+numberOfResMatched);
-		System.out.println("The number of empty agents inside stable marriage:"+emptyAgents.size());
-		/*
-		System.out.println("The matching is as follows for agents:");
-		for(Long r_id : agentMatches.keySet() ) {
+		//System.out.println("The number of resources matched:"+numberOfResMatched);
+		//System.out.println("The number of empty agents inside stable marriage:"+emptyAgents.size());
 
 
-			System.out.print(r_id+","+agentMatches.get(r_id));
-
-			System.out.println();
-		}
-		*/
 
 
 	}
@@ -613,17 +544,17 @@ public class Simulator {
 		int fresh=0;
 		initialPoolTime=initialPoolTime+ TimeUnit.SECONDS.toSeconds(assignmentPeriod);
 		endPooltime=initialPoolTime+TimeUnit.SECONDS.toSeconds(assignmentPeriod);
-		System.out.println("Difference:"+(endPooltime-initialPoolTime));
+		//System.out.println("Difference:"+(endPooltime-initialPoolTime));
 		ScoreInfo score = new ScoreInfo();
 		DateTimeFormatter dtf = DateTimeFormatter.ofPattern("HH:mm:ss");
 		LocalDateTime now = LocalDateTime.now();
 		LocalDateTime after5mins=LocalDateTime.now().plusMinutes(5);
-		System.out.println(dtf.format(now));
+		//System.out.println(dtf.format(now));
 		if (map == null) {
 			System.out.println("map is null at beginning of run");
 		}
 		long toTriggerTime;
-		try//(ProgressBar pb = new ProgressBar("Progress:", 100, ProgressBarStyle.ASCII) )
+		try(ProgressBar pb = new ProgressBar("Progress:", 100, ProgressBarStyle.ASCII) )
 		{
 			long beginTime = events.peek().time;
 			while (events.peek().time <= simulationEndTime) {
@@ -634,10 +565,10 @@ public class Simulator {
 					System.out.println("***Broken after 5 mins!!");
 					break;
 				}
-				 */
+				*/
 				Event toTrigger = events.poll();
 				toTriggerTime=toTrigger.time;
-				//pb.stepTo((long)(((float)(toTrigger.time - beginTime)) / (simulationEndTime - beginTime) * 100.0));
+				pb.stepTo((long)(((float)(toTrigger.time - beginTime)) / (simulationEndTime - beginTime) * 100.0));
 				if(toTrigger.getClass()==ResourceEvent.class && ((ResourceEvent) toTrigger).eventCause==0)
 					fresh++;
 				if(toTrigger.getClass()==ResourceEvent.class && toTrigger.time>=initialPoolTime && toTrigger.time<endPooltime || totalResources==CSVNewYorkParser.totalResourcesNo && toTrigger.getClass()==ResourceEvent.class) {
@@ -648,10 +579,9 @@ public class Simulator {
 					}
 
 					pool++;
-					System.out.println("Pooling:"+pool+" "+"fresh resources:"+fresh+" expired:"+expiredResources +" empty agents:"+emptyAgents.size());
+					//System.out.println("Pooling:"+pool+" "+"fresh resources:"+fresh+" expired:"+expiredResources +" empty agents:"+emptyAgents.size());
 					stableMarriage(toTriggerTime);
 					AgentEvent.agentList.clear();
-					//ResourceEvent.resList.clear();
 					initialPoolTime=initialPoolTime+ TimeUnit.SECONDS.toSeconds(assignmentPeriod);
 					endPooltime=initialPoolTime+TimeUnit.SECONDS.toSeconds(assignmentPeriod);
 					fresh=0;
@@ -664,14 +594,14 @@ public class Simulator {
 				if (e != null) {
 					events.add(e);
 				}
-				//System.out.println("benefit:"+totalBenefit);
+
 			}
 
 		} catch (Exception e) {
 			e.printStackTrace();
 		}
 		System.out.println("Simulation finished.");
-		System.out.println("ResList:"+ResourceEvent.resList.size());
+		System.out.println("Number of pools processed:"+pool);
 
 		score.end();
 	}
@@ -758,7 +688,6 @@ public class Simulator {
 			System.out.println("Assignment Period: "+assignmentPeriod);
 			System.out.println("Resource Maximum Life Time: " + ResourceMaximumLifeTime + " seconds");
 			System.out.println("Agent class: " + agentClass.getName());
-			System.out.println("Expired resources:"+expiredResources);
 			System.out.println("\n***Statistics***");
 
 			if (totalResources != 0) {
@@ -769,15 +698,18 @@ public class Simulator {
 				for (AgentEvent ae: emptyAgents) {
 					totalRemainTime += (simulationEndTime - ae.startSearchTime);
 				}
-				//sb.append("expired resources:"+expiredResources);
-				sb.append("average agent search time: " + Math.floorDiv(totalAgentSearchTime + totalRemainTime, (totalAssignments + emptyAgents.size())) + " seconds \n");
-				sb.append("average resource wait time: " + Math.floorDiv(totalResourceWaitTime, totalResources) + " seconds \n");
-				sb.append("resource expiration percentage: " + Math.floorDiv(expiredResources * 100, totalResources) + "%\n");
-				sb.append("\n");
-				//sb.append("average agent cruise time: " + Math.floorDiv(totalAgentCruiseTime, totalAssignments) + " seconds \n");
-				//sb.append("average agent approach time: " + Math.floorDiv(totalAgentApproachTime, totalAssignments) + " seconds \n");
-				sb.append("total benefit: " + totalBenefit + "\n");
-				sb.append("total number of assignments: " + totalAssignments + "\n");
+				sb.append("Number of pools " + numberOfPools + "\n");
+				sb.append("Number of assignments: " + totalAssignments + "\n");
+				sb.append("Number of resources: " + totalResources + "\n");
+				sb.append("Expired/Dropped resources " + expiredResources + "\n");
+				sb.append("Total Benefit: " + totalBenefit + "\n");
+				sb.append("Average Benefit per taxi/assignment: " + (totalBenefit/totalAgents) + "\n\n");
+
+				sb.append("Average agent search time: " + Math.floorDiv(totalAgentSearchTime + totalRemainTime, (totalAssignments + emptyAgents.size())) + " seconds \n");
+				sb.append("The percentage of dropped requests: " + ((float)(expiredResources * 100) /totalResources) + " %\n");
+				sb.append("Average resource wait time: " + Math.floorDiv(totalResourceWaitTime, totalResources) + " seconds \n");
+				sb.append("Running time of the simulation: " + totalTime + " seconds\n");
+
 			} else {
 				sb.append("No resources.\n");
 			}

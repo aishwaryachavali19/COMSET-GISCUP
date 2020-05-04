@@ -104,9 +104,6 @@ public class Main {
             simulator.configure(mapJSONFile, datasetFile, numberOfAgents, boundingPolygonKMLFile, resourceMaximumLifeTime, agentPlacementSeed, speedReduction,assignmentPeriod);
 
 
-            System.out.println("out of config");
-			//simulator.stableMarriage();
-
 			simulator.run();
 
 		} catch (Exception ex) {
