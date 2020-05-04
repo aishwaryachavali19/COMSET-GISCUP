@@ -1,9 +1,11 @@
 # Instructions to run the code
 Our project implements two algorithms:
 To run the project for Fair assignment, clone the branch "FairAssignment".
+
 git clone -b FairAssignment https://github.com/sanava2010/COMSET-GISCUP.git
 
 To run the project for Optimal assignment, clone the branch "OptimalAssignment_Autonomous" to download the code.
+
 git clone -b OptimalAssignment_Autonomous https://github.com/sanava2010/COMSET-GISCUP.git
 
 General instructions for running COMSET:
